@@ -471,7 +471,7 @@ class BaseMhaMlp(BaseEstimator):
         """
         pass
 
-    def save_loss_train(self, save_path="history", filename="loss.csv"):
+    def save_training_loss(self, save_path="history", filename="loss.csv"):
         """
         Save the loss (convergence) during the training process to csv file.
 
@@ -487,7 +487,7 @@ class BaseMhaMlp(BaseEstimator):
             data = {"epoch": list(range(1, len(self.loss_train) + 1)), "loss": self.loss_train}
             pd.DataFrame(data).to_csv(f"{save_path}/{filename}", index=False)
 
-    def save_metrics(self, y_true, y_pred, list_metrics=("RMSE", "MAE"), save_path="history", filename="metrics.csv"):
+    def save_evaluation_metrics(self, y_true, y_pred, list_metrics=("RMSE", "MAE"), save_path="history", filename="metrics.csv"):
         """
         Save evaluation metrics to csv file
 
