@@ -4,7 +4,6 @@ CITATION.cff
 run_fs.py
 tests/test_Mha*
 docs/
-README.md
 metaperceptron34234/
 examples/utils/
 examples/exam_mha*
