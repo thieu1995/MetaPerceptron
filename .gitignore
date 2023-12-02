@@ -1,6 +1,5 @@
 
 metaperceptron/data/
-CITATION.cff
 run_fs.py
 tests/test_Mha*
 docs/
