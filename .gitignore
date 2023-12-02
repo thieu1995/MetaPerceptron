@@ -1,6 +1,5 @@
 
 metaperceptron/data/
-ChangeLog.md
 CITATION.cff
 run_fs.py
 tests/test_Mha*
