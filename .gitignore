@@ -5,7 +5,6 @@ CITATION.cff
 run_fs.py
 tests/test_Mha*
 docs/
-.flake8
 README.md
 metaperceptron34234/
 setup.py
