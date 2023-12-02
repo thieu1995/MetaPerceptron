@@ -1,3 +1,6 @@
+
+.github/
+metaperceptron/data/
 ChangeLog.md
 CITATION.cff
 MANIFEST.in
@@ -8,7 +11,7 @@ examples/
 docs/
 .flake8
 README.md
-metaperceptron/
+metaperceptron34234/
 setup.py
 
 examples/wrapper/history/
