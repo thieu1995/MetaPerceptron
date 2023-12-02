@@ -7,14 +7,14 @@ MANIFEST.in
 run_fs.py
 requirements.txt
 tests/
-examples/
 docs/
 .flake8
 README.md
 metaperceptron34234/
 setup.py
 
-examples/wrapper/history/
+examples/utils/
+examples/exam_mha*
 # Pycharm
 .idea/
 tut_upcode.md
