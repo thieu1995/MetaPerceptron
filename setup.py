@@ -15,7 +15,7 @@ def readme():
 
 setup(
     name="metaperceptron",
-    version="1.0.0",
+    version="1.0.1",
     author="Thieu",
     author_email="nguyenthieu2102@gmail.com",
     description="MetaPerceptron: Unleashing the Power of Metaheuristic-optimized Multi-Layer Perceptron - A Python Library",
@@ -40,7 +40,7 @@ setup(
         'Documentation': 'https://metaperceptron.readthedocs.io/',
         'Source Code': 'https://github.com/thieu1995/MetaPerceptron',
         'Bug Tracker': 'https://github.com/thieu1995/MetaPerceptron/issues',
-        'Change Log': 'https://github.com/thieu1995/MetaPerceptron/blob/master/ChangeLog.md',
+        'Change Log': 'https://github.com/thieu1995/MetaPerceptron/blob/main/ChangeLog.md',
         'Forum': 'https://t.me/+fRVCJGuGJg1mNDg1',
     },
     packages=find_packages(exclude=['tests*', 'examples*']),
