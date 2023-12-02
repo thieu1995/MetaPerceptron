@@ -1,12 +1,11 @@
 
-.github/
 metaperceptron/data/
 ChangeLog.md
 CITATION.cff
 MANIFEST.in
 run_fs.py
 requirements.txt
-tests/
+tests/test_Mha*
 docs/
 .flake8
 README.md
