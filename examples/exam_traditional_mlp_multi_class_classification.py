@@ -25,14 +25,14 @@ data.y_test = scaler_y.transform(data.y_test)
 
 print(type(data.X_train), type(data.y_train))
 
-## Create core
+## Create model
 model = MlpClassifier(hidden_size=25, act1_name="tanh", act2_name="sigmoid", obj_name="CEL",
                       max_epochs=10, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=True)
 
-## Train the core
+## Train the model
 model.fit(X=data.X_train, y=data.y_train)
 
-## Test the core
+## Test the model
 y_pred = model.predict(data.X_test, return_prob=True)
 print(y_pred)
 print(model.predict(data.X_test, return_prob=False))

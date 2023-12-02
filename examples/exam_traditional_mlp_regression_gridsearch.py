@@ -40,7 +40,7 @@ params = {
     ]
 }
 
-## Define the core
+## Define the model
 model = MlpRegressor(verbose=False)
 
 ## Define the gridsearch object
@@ -52,10 +52,10 @@ gs.fit(data.X_train, data.y_train)
 ## Get the best score and best parameter
 print(gs.best_score_, gs.best_params_)
 
-# Get the core with the best parameters
+# Get the model with the best parameters
 best_model = gs.best_estimator_
 
-## Get the prediction of the best core
+## Get the prediction of the best model
 y_pred = best_model.predict(data.X_test)
 
 ## Calculate some metrics
