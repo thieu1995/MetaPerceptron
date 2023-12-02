@@ -2,9 +2,7 @@
 metaperceptron/data/
 ChangeLog.md
 CITATION.cff
-MANIFEST.in
 run_fs.py
-requirements.txt
 tests/test_Mha*
 docs/
 .flake8
