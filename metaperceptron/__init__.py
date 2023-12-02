@@ -7,5 +7,5 @@
 __version__ = "1.0.0"
 
 from metaperceptron.helpers.preprocessor import Data, DataTransformer
-from metaperceptron.core.standard_mlp import MlpRegressor, MlpClassifier
+from metaperceptron.core.traditional_mlp import MlpRegressor, MlpClassifier
 # from metaperceptron.core.mha_mlp import MhaMlpRegressor, MhaFlnnClassifier
