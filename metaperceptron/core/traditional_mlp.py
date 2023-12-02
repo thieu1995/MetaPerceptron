@@ -19,20 +19,23 @@ class MlpRegressor(BaseMlpTorch):
 
     Parameters
     ----------
-    expand_name : str, default="chebyshev"
-        The expand function that will be used. The supported expand functions are:
-        {"chebyshev", "legendre", "gegenbauer", "laguerre", "hermite", "power", "trigonometric"}
+    hidden_size : int, default=50
+        The hidden size of MLP network (This network only has single hidden layer).
 
-    n_funcs : int, default=4
-        The first `n_funcs` in expand functions list will be used. Valid value from 1 to 10.
+    act1_name : str, defeault="tanh"
+        This is activation for hidden layer. The supported activation are: {"none", "relu",
+        "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus",
+        "mish", "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
 
-    act_name : {"none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh", "sigmoid",
-        "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus", "mish", "soft_sign", "tanh_shrink",
-        "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax" }, default='none'
-        Activation function for the hidden layer.
+    act2_name : str, defeault="sigmoid"
+        This is activation for output layer. The supported activation are:
+        {"none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus", "mish",
+        "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
 
     obj_name : str, default="MSE"
-        The name of objective for the problem, also depend on the problem is classification and regression.
+        The name of loss function for the network.
 
     max_epochs : int, default=1000
         Maximum number of epochs / iterations / generations
@@ -64,17 +67,17 @@ class MlpRegressor(BaseMlpTorch):
     >>> ## Scale dataset
     >>> data.X_train, scaler = data.scale(data.X_train, scaling_methods=("minmax"))
     >>> data.X_test = scaler.transform(data.X_test)
-    >>> ## Create core
-    >>> core = MlpRegressor(expand_name="chebyshev", n_funcs=4, act_name="none",
-    >>>                          obj_name="MSE", max_epochs=100, batch_size=32, optimizer="SGD", verbose=True)
-    >>> ## Train the core
-    >>> core.fit(data.X_train, data.y_train)
-    >>> ## Test the core
-    >>> y_pred = core.predict(data.X_test)
+    >>> ## Create model
+    >>> model = MlpRegressor(hidden_size=25, act1_name="tanh", act2_name="sigmoid", obj_name="MSE",
+    >>>             max_epochs=10, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=True)
+    >>> ## Train the model
+    >>> model.fit(data.X_train, data.y_train)
+    >>> ## Test the model
+    >>> y_pred = model.predict(data.X_test)
     >>> ## Calculate some metrics
-    >>> print(core.score(X=data.X_test, y=data.y_test, method="RMSE"))
-    >>> print(core.scores(X=data.X_test, y=data.y_test, list_methods=["R2", "NSE", "MAPE"]))
-    >>> print(core.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["R2", "NSE", "MAPE", "NNSE"]))
+    >>> print(model.score(X=data.X_test, y=data.y_test, method="RMSE"))
+    >>> print(model.scores(X=data.X_test, y=data.y_test, list_methods=["R2", "NSE", "MAPE"]))
+    >>> print(model.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["R2", "NSE", "MAPE", "NNSE"]))
     """
 
     SUPPORTED_LOSSES = {
@@ -206,19 +209,22 @@ class MlpClassifier(BaseMlpTorch):
 
     Parameters
     ----------
-    expand_name : str, default="chebyshev"
-        The expand function that will be used. The supported expand functions are:
-        {"chebyshev", "legendre", "gegenbauer", "laguerre", "hermite", "power", "trigonometric"}
+    hidden_size : int, default=50
+        The hidden size of MLP network (This network only has single hidden layer).
 
-    n_funcs : int, default=4
-        The first `n_funcs` in expand functions list will be used. Valid value from 1 to 10.
+    act1_name : str, defeault="tanh"
+        This is activation for hidden layer. The supported activation are: {"none", "relu",
+        "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus",
+        "mish", "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
 
-    act_name : {"none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
-        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus", "mish", "soft_sign",
-        "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax" }, default='none'
-        Activation function for the hidden layer.
+    act2_name : str, defeault="sigmoid"
+        This is activation for output layer. The supported activation are:
+        {"none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus", "mish",
+        "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
 
-    obj_name : str, default=NLLL
+    obj_name : str, default="NLLL"
         The name of objective for classification problem (binary and multi-class classification)
 
     max_epochs : int, default=1000
@@ -251,17 +257,17 @@ class MlpClassifier(BaseMlpTorch):
     >>> ## Scale dataset
     >>> data.X_train, scaler = data.scale(data.X_train, scaling_methods=("minmax"))
     >>> data.X_test = scaler.transform(data.X_test)
-    >>> ## Create core
-    >>> core = MlpClassifier(expand_name="chebyshev", n_funcs=4, act_name="none",
-    >>>                          obj_name="CEL", max_epochs=100, batch_size=32, optimizer="SGD", verbose=True)
-    >>> ## Train the core
-    >>> core.fit(data.X_train, data.y_train)
-    >>> ## Test the core
-    >>> y_pred = core.predict(data.X_test)
+    >>> ## Create model
+    >>> model = MlpClassifier(hidden_size=25, act1_name="tanh", act2_name="sigmoid", obj_name="BCEL",
+    >>>                 max_epochs=10, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=True)
+    >>> ## Train the model
+    >>> model.fit(data.X_train, data.y_train)
+    >>> ## Test the model
+    >>> y_pred = model.predict(data.X_test)
     >>> ## Calculate some metrics
-    >>> print(core.score(X=data.X_test, y=data.y_test, method="RMSE"))
-    >>> print(core.scores(X=data.X_test, y=data.y_test, list_methods=["R2", "NSE", "MAPE"]))
-    >>> print(core.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["R2", "NSE", "MAPE", "NNSE"]))
+    >>> print(model.score(X=data.X_test, y=data.y_test, method="RMSE"))
+    >>> print(model.scores(X=data.X_test, y=data.y_test, list_methods=["R2", "NSE", "MAPE"]))
+    >>> print(model.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["R2", "NSE", "MAPE", "NNSE"]))
     """
 
     SUPPORTED_LOSSES = {

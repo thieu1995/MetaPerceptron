@@ -53,21 +53,24 @@ class MlpTorch(nn.Module):
 
 class BaseMlpTorch(BaseEstimator):
     """
-    Defines the most general class for MLP network that inherits the BaseEstimator class of Scikit-Learn library.
+    Defines the most general class for traditional MLP models that inherits the BaseEstimator class of Scikit-Learn library.
 
     Parameters
     ----------
-    expand_name : str, default="chebyshev"
-        The expand function that will be used. The supported expand functions are:
-        {"chebyshev", "legendre", "gegenbauer", "laguerre", "hermite", "power", "trigonometric"}
+    hidden_size : int, default=50
+        The hidden size of MLP network (This network only has single hidden layer).
 
-    n_funcs : int, default=4
-        The first `n_funcs` in expand functions list will be used. Valid value from 1 to 10.
+    act1_name : str, defeault="tanh"
+        This is activation for hidden layer. The supported activation are: {"none", "relu",
+        "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus",
+        "mish", "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
 
-    act_name : {"none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
-        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus", "mish", "soft_sign",
-        "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax" }, default='none'
-        Activation function for the hidden layer.
+    act2_name : str, defeault="sigmoid"
+        This is activation for output layer. The supported activation are:
+        {"none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus", "mish",
+        "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
 
     obj_name : str, default=None
         The name of objective for the problem, also depend on the problem is classification and regression.
