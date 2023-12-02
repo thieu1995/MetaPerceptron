@@ -356,7 +356,7 @@ class BaseMlpTorch(BaseEstimator):
         """
         Path(save_path).mkdir(parents=True, exist_ok=True)
         if self.loss_train is None:
-            print(f"{self.__class__.__name__} core doesn't have training loss!")
+            print(f"{self.__class__.__name__} model doesn't have training loss!")
         else:
             data = {"epoch": list(range(1, len(self.loss_train) + 1)), "loss": self.loss_train}
             pd.DataFrame(data).to_csv(f"{save_path}/{filename}", index=False)
@@ -394,9 +394,9 @@ class BaseMlpTorch(BaseEstimator):
         data = {"y_true": np.squeeze(np.asarray(y_true)), "y_pred": np.squeeze(np.asarray(y_pred))}
         pd.DataFrame(data).to_csv(f"{save_path}/{filename}", index=False)
 
-    def save_model(self, save_path="history", filename="core.pkl"):
+    def save_model(self, save_path="history", filename="model.pkl"):
         """
-        Save core to pickle file
+        Save model to pickle file
 
         Parameters
         ----------
@@ -409,7 +409,7 @@ class BaseMlpTorch(BaseEstimator):
         pickle.dump(self, open(f"{save_path}/{filename}", 'wb'))
 
     @staticmethod
-    def load_model(load_path="history", filename="core.pkl"):
+    def load_model(load_path="history", filename="model.pkl"):
         if filename[-4:] != ".pkl":
             filename += ".pkl"
         return pickle.load(open(f"{load_path}/{filename}", 'rb'))
