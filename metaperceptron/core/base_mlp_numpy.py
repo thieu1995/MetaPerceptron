@@ -16,30 +16,33 @@ from metaperceptron.helpers.metric_util import get_all_regression_metrics, get_a
 
 
 class MlpNumpy:
-    """This class defines the general Multi-Layer Perceptron (MLP) using Numpy
+    """This class defines the general Multi-Layer Perceptron (MLP) model using Numpy
 
     Parameters
     ----------
-    size_input : int, default=5
-        The number of input features
+    input_size : int, default=5
+        The number of input nodes
 
-    size_output : int, default=1
-        The number of output labels
+    hidden_size : int, default=10
+        The number of hidden nodes
 
-    expand_name : str, default="chebyshev"
-        The expand function that will be used. The supported expand functions are:
-        {"chebyshev", "legendre", "gegenbauer", "laguerre", "hermite", "power", "trigonometric"}
+    output_size : int, default=1
+        The number of output nodes
 
-    n_funcs : int, default=4
-        The first `n_funcs` in expand functions list will be used. Valid value from 1 to 10.
-
-    act_name : str, default='none'
+    act1_name : str, default='tanh'
         Activation function for the hidden layer. The supported activation functions are:
-        {"none", "relu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh", "sigmoid", "hard_sigmoid",
-        "swish",  "hard_swish", "soft_plus", "mish", "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink"}
+        ["none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "swish", "hard_swish", "soft_plus", "mish", "soft_sign",
+        "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax", "silu"]
+
+    act2_name : str, default='sigmoid'
+        Activation function for the hidden layer. The supported activation functions are:
+        ["none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "swish", "hard_swish", "soft_plus", "mish", "soft_sign",
+        "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax", "silu"]
     """
 
-    def __init__(self, input_size, hidden_size, output_size, act1_name="tanh", act2_name="sigmoid"):
+    def __init__(self, input_size=5, hidden_size=10, output_size=1, act1_name="tanh", act2_name="sigmoid"):
         # Initialize weights and biases for the input-hidden and hidden-output layers
         self.weights = {
             'weights_ih': np.random.rand(input_size, hidden_size),
@@ -49,6 +52,9 @@ class MlpNumpy:
         }
         self.act1_func = getattr(act_util, act1_name)
         self.act2_func = getattr(act_util, act2_name)
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
 
     def forward(self, inputs):
         # Forward pass through the network
@@ -57,7 +63,7 @@ class MlpNumpy:
         return output
 
     def fit(self, X, y):
-        """Fit the core to data matrix X and target(s) y.
+        """Fit the model to data matrix X and target(s) y.
 
         Parameters
         ----------
@@ -70,14 +76,14 @@ class MlpNumpy:
         Returns
         -------
         self : object
-            Returns a trained MLP core.
+            Returns a trained MLP model.
         """
         # H = self.act_func(np.dot(X, self.weights["w1"]) + self.weights["b"])
         # self.weights["w2"] = np.linalg.pinv(H) @ y
         return self
 
     def predict(self, X):
-        """Predict using the Extreme Learning Machine core.
+        """Predict using the Extreme Learning Machine model.
 
         Parameters
         ----------
@@ -116,26 +122,29 @@ class MlpNumpy:
 
 class BaseMhaMlp(BaseEstimator):
     """
-    Defines the most general class for Metaheuristic-based MLP core that inherits the BaseMlpNumpy class
+    Defines the most general class for Metaheuristic-based MLP model that inherits the BaseMlpNumpy class
 
     Parameters
     ----------
-    expand_name : str, default="chebyshev"
-        The expand function that will be used. The supported expand functions are:
-        {"chebyshev", "legendre", "gegenbauer", "laguerre", "hermite", "power", "trigonometric"}
+    hidden_size : int, default=50
+        The number of hidden nodes
 
-    n_funcs : int, default=4
-        The first `n_funcs` in expand functions list will be used. Valid value from 1 to 10.
-
-    act_name : str, default='none'
+    act1_name : str, default='tanh'
         Activation function for the hidden layer. The supported activation functions are:
-        {"none", "relu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh", "sigmoid", "hard_sigmoid",
-        "swish",  "hard_swish", "soft_plus", "mish", "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink"}
+        ["none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "swish", "hard_swish", "soft_plus", "mish", "soft_sign",
+        "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax", "silu"]
+
+    act2_name : str, default='sigmoid'
+        Activation function for the hidden layer. The supported activation functions are:
+        ["none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
+        "sigmoid", "hard_sigmoid", "log_sigmoid", "swish", "hard_swish", "soft_plus", "mish", "soft_sign",
+        "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax", "silu"]
 
     obj_name : None or str, default=None
         The name of objective for the problem, also depend on the problem is classification and regression.
 
-    optimizer : str or instance of Optimizer class (from Mealpy library), default = "BaseGA"
+    optimizer : str or instance of Optimizer class (from Mealpy library), default = "OriginalWOA"
         The Metaheuristic Algorithm that use to solve the feature selection problem.
         Current supported list, please check it here: https://github.com/thieu1995/mealpy.
         If a custom optimizer is passed, make sure it is an instance of `Optimizer` class.
@@ -151,12 +160,16 @@ class BaseMhaMlp(BaseEstimator):
     SUPPORTED_OPTIMIZERS = list(get_all_optimizers().keys())
     SUPPORTED_CLS_OBJECTIVES = get_all_classification_metrics()
     SUPPORTED_REG_OBJECTIVES = get_all_regression_metrics()
-    SUPPORTED_ACTIVATIONS = ["none", "relu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh", "sigmoid", "hard_sigmoid",
-                             "swish",  "hard_swish", "soft_plus", "mish", "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink"]
+    SUPPORTED_CLS_METRICS = get_all_classification_metrics()
+    SUPPORTED_REG_METRICS = get_all_regression_metrics()
+    SUPPORTED_ACTIVATIONS = ["none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu",
+                             "tanh", "hard_tanh", "sigmoid", "hard_sigmoid", "log_sigmoid", "swish",
+                             "hard_swish", "soft_plus", "mish", "soft_sign", "tanh_shrink", "soft_shrink",
+                             "hard_shrink", "softmin", "softmax", "log_softmax", "silu"]
     CLS_OBJ_LOSSES = None
 
     def __init__(self, hidden_size=50, act1_name="tanh", act2_name="sigmoid",
-                 obj_name=None, optimizer="BaseGA", optimizer_paras=None, verbose=True):
+                 obj_name=None, optimizer="OriginalWOA", optimizer_paras=None, verbose=True):
         super().__init__()
         self.hidden_size = validator.check_int("hidden_size", hidden_size, [2, 1000000])
         self.act1_name = validator.check_str("act1_name", act1_name, BaseMhaMlp.SUPPORTED_ACTIVATIONS)
@@ -194,7 +207,8 @@ class BaseMhaMlp(BaseEstimator):
     def objective_function(self, solution=None):
         pass
 
-    def fit(self, X, y, lb=(-1.0, ), ub=(1.0, ), save_population=False):
+    def fit(self, X, y, lb=(-1.0, ), ub=(1.0, ), save_population=False, obj_weights=None):
+        self.obj_weights = obj_weights
         self.network, self.obj_scaler = self.create_network(X, y)
         y_scaled = self.obj_scaler.transform(y)
         self.X_temp, self.y_temp = X, y_scaled
@@ -468,7 +482,7 @@ class BaseMhaMlp(BaseEstimator):
         """
         Path(save_path).mkdir(parents=True, exist_ok=True)
         if self.loss_train is None:
-            print(f"{self.__class__.__name__} core doesn't have training loss!")
+            print(f"{self.__class__.__name__} model doesn't have training loss!")
         else:
             data = {"epoch": list(range(1, len(self.loss_train) + 1)), "loss": self.loss_train}
             pd.DataFrame(data).to_csv(f"{save_path}/{filename}", index=False)
@@ -506,9 +520,9 @@ class BaseMhaMlp(BaseEstimator):
         data = {"y_true": np.squeeze(np.asarray(y_true)), "y_pred": np.squeeze(np.asarray(y_pred))}
         pd.DataFrame(data).to_csv(f"{save_path}/{filename}", index=False)
 
-    def save_model(self, save_path="history", filename="core.pkl"):
+    def save_model(self, save_path="history", filename="model.pkl"):
         """
-        Save core to pickle file
+        Save model to pickle file
 
         Parameters
         ----------
@@ -521,7 +535,7 @@ class BaseMhaMlp(BaseEstimator):
         pickle.dump(self, open(f"{save_path}/{filename}", 'wb'))
 
     @staticmethod
-    def load_model(load_path="history", filename="core.pkl"):
+    def load_model(load_path="history", filename="model.pkl"):
         if filename[-4:] != ".pkl":
             filename += ".pkl"
         return pickle.load(open(f"{load_path}/{filename}", 'rb'))
