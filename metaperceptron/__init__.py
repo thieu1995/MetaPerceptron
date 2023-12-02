@@ -8,4 +8,4 @@ __version__ = "1.0.1"
 
 from metaperceptron.helpers.preprocessor import Data, DataTransformer
 from metaperceptron.core.traditional_mlp import MlpRegressor, MlpClassifier
-# from metaperceptron.core.mha_mlp import MhaMlpRegressor, MhaFlnnClassifier
+from metaperceptron.core.mha_mlp import MhaMlpRegressor, MhaMlpClassifier
