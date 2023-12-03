@@ -16,7 +16,7 @@ def test_MhaMlpClassifier_class():
 
     opt_paras = {"name": "GA", "epoch": 10, "pop_size": 30}
     model = MhaMlpClassifier(hidden_size=50, act1_name="tanh", act2_name="sigmoid",
-                 obj_name="CEL", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
+                             obj_name="CEL", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
     model.fit(X, y)
     pred = model.predict(X)
     assert MhaMlpClassifier.SUPPORTED_CLS_OBJECTIVES == model.SUPPORTED_CLS_OBJECTIVES
