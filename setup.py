@@ -15,7 +15,7 @@ def readme():
 
 setup(
     name="metaperceptron",
-    version="1.0.1",
+    version="1.1.0",
     author="Thieu",
     author_email="nguyenthieu2102@gmail.com",
     description="MetaPerceptron: Unleashing the Power of Metaheuristic-optimized Multi-Layer Perceptron - A Python Library",

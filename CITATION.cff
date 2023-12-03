@@ -5,7 +5,7 @@ authors:
     given-names: "Nguyen"
     orcid: "https://orcid.org/0000-0001-9994-8747"
 title: "MetaPerceptron: Unleashing the Power of Metaheuristic-optimized Multi-Layer Perceptron - A Python Library"
-version: v1.0.1
+version: v1.1.0
 doi: 10.5281/zenodo.10251021
 date-released: 2023-12-02
 url: "https://github.com/thieu1995/MetaPerceptron"

@@ -4,7 +4,7 @@
 #       Github: https://github.com/thieu1995        %                         
 # --------------------------------------------------%
 
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 from metaperceptron.helpers.preprocessor import Data, DataTransformer
 from metaperceptron.core.traditional_mlp import MlpRegressor, MlpClassifier

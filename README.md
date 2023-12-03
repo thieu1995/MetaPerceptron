@@ -6,7 +6,7 @@
 
 ---
 
-[![GitHub release](https://img.shields.io/badge/release-1.0.1-yellow.svg)](https://github.com/thieu1995/MetaPerceptron/releases)
+[![GitHub release](https://img.shields.io/badge/release-1.1.0-yellow.svg)](https://github.com/thieu1995/MetaPerceptron/releases)
 [![Wheel](https://img.shields.io/pypi/wheel/gensim.svg)](https://pypi.python.org/pypi/metaperceptron) 
 [![PyPI version](https://badge.fury.io/py/metaperceptron.svg)](https://badge.fury.io/py/metaperceptron)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/metaperceptron.svg)
@@ -98,7 +98,7 @@ Please include these citations if you plan to use this library:
 
 * Install the [current PyPI release](https://pypi.python.org/pypi/metaperceptron):
 ```sh 
-$ pip install metaperceptron==1.0.1
+$ pip install metaperceptron==1.1.0
 ```
 
 * Install directly from source code
