@@ -4,7 +4,7 @@ Installation
 
 * Install the `current PyPI release <https://pypi.python.org/pypi/metaperceptron />`_::
 
-   $ pip install metaperceptron==1.0.1
+   $ pip install metaperceptron==1.1.0
 
 
 * Install directly from source code::
