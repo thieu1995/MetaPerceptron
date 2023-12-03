@@ -23,15 +23,18 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 
-MetaPerceptron (Metaheuristic-optimized Multi-Layer Perceptron) is a Python library that implement the traditional MLP models 
-that trained by Gradient Descent-based optimizers (SGD, Adam, Adelta, Adagrad,...), and Metaheuristic-optimized MLP models.
-It provides a comprehensive list of optimizers for training MLP models and is also compatible with the Scikit-Learn library. 
-With MetaPerceptron, you can perform searches and hyperparameter tuning using the functionalities provided by the Scikit-Learn library.
+MetaPerceptron (Metaheuristic-optimized Multi-Layer Perceptron) is a Python library that implements variants and the 
+traditional version of Multi-Layer Perceptron models. These include Metaheuristic-optimized MLP models (GA, PSO, WOA, TLO, DE, ...) 
+and Gradient Descent-optimized MLP models (SGD, Adam, Adelta, Adagrad, ...). It provides a comprehensive list of 
+optimizers for training MLP models and is also compatible with the Scikit-Learn library. With MetaPerceptron, 
+you can perform searches and hyperparameter tuning using the features provided by the Scikit-Learn library.
 
 * **Free software:** GNU General Public License (GPL) V3 license
 * **Provided Estimator**: MlpRegressor, MlpClassifier, MhaMlpRegressor, MhaMlpClassifier
-* **Total Metaheuristic-based Mlp Regression**: > 200 Models 
-* **Total Metaheuristic-based Mlp Classification**: > 200 Models
+* **Total Metaheuristic-based MLP Regressor**: > 200 Models 
+* **Total Metaheuristic-based MLP Classifier**: > 200 Models
+* **Total Gradient Descent-based MLP Regressor**: 12 Models
+* **Total Gradient Descent-based MLP Classifier**: 12 Models
 * **Supported performance metrics**: >= 67 (47 regressions and 20 classifications)
 * **Supported objective functions (as fitness functions or loss functions)**: >= 67 (47 regressions and 20 classifications)
 * **Documentation:** https://metaperceptron.readthedocs.io
@@ -120,200 +123,152 @@ $ python
 
 ### Examples
 
-In this section, we will explore the usage of the MetaPerceptron model with the assistance of a dataset. While all the 
-preprocessing steps mentioned below can be replicated using Scikit-Learn, we have implemented some utility functions 
-to provide users with convenience and faster usage.  
+Please check all use cases and examples in folder (examples)[\examples].
 
-#### Combine MetaPerceptron library like a normal library with scikit-learn.
+1) MetaPerceptron provides this useful classes
 
 ```python
-### Step 1: Importing the libraries
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder
-from metaperceptron import MlpRegressor, MlpClassifier, MhaMlpRegressor, MhaMlpClassifier
-
-#### Step 2: Reading the dataset
-dataset = pd.read_csv('Position_Salaries.csv')
-X = dataset.iloc[:, 1:2].values
-y = dataset.iloc[:, 2].values
-
-#### Step 3: Next, split dataset into train and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True, random_state=100)
-
-#### Step 4: Feature Scaling
-scaler_X = MinMaxScaler()
-scaler_X.fit(X_train)
-X_train = scaler_X.transform(X_train)
-X_test = scaler_X.transform(X_test)
-
-le_y = LabelEncoder()  # This is for classification problem only
-le_y.fit(y)
-y_train = le_y.transform(y_train)
-y_test = le_y.transform(y_test)
-
-#### Step 5: Fitting MLP-based core to the dataset
-
-##### 5.1: Use standard MLP core for regression problem
-regressor = MlpRegressor(expand_name="chebyshev", n_funcs=4, act_name="elu",
-                          obj_name="MSE", max_epochs=100, batch_size=32, optimizer="SGD", verbose=True)
-regressor.fit(X_train, y_train)
-
-##### 5.2: Use standard MLP core for classification problem 
-classifer = MlpClassifier(expand_name="chebyshev", n_funcs=4, act_name="sigmoid",
-                           obj_name="BCEL", max_epochs=100, batch_size=32, optimizer="SGD", verbose=True)
-classifer.fit(X_train, y_train)
-
-##### 5.3: Use Metaheuristic-based MLP core for regression problem
-print(MhaMlpClassifier.SUPPORTED_OPTIMIZERS)
-print(MhaMlpClassifier.SUPPORTED_REG_OBJECTIVES)
-opt_paras = {"name": "GA", "epoch": 10, "pop_size": 30}
-model = MhaMlpRegressor(expand_name="chebyshev", n_funcs=3, act_name="elu",
-                         obj_name="RMSE", optimizer="BaseGA", optimizer_paras=opt_paras, verbose=True)
-regressor.fit(X_train, y_train)
-
-##### 5.4: Use Metaheuristic-based MLP core for classification problem
-print(MhaMlpClassifier.SUPPORTED_OPTIMIZERS)
-print(MhaMlpClassifier.SUPPORTED_CLS_OBJECTIVES)
-opt_paras = {"name": "GA", "epoch": 10, "pop_size": 30}
-classifier = MhaMlpClassifier(expand_name="chebyshev", n_funcs=4, act_name="sigmoid",
-                               obj_name="NPV", optimizer="BaseGA", optimizer_paras=opt_paras, verbose=True)
-classifier.fit(X_train, y_train)
-
-#### Step 6: Predicting a new result
-y_pred = regressor.predict(X_test)
-
-y_pred_cls = classifier.predict(X_test)
-y_pred_label = le_y.inverse_transform(y_pred_cls)
-
-#### Step 7: Calculate metrics using score or scores functions.
-print("Try my AS metric with score function")
-print(regressor.score(X_test, y_test, method="AS"))
-
-print("Try my multiple metrics with scores function")
-print(classifier.scores(X_test, y_test, list_methods=["AS", "PS", "F1S", "CEL", "BSL"]))
+from metaperceptron import DataTransformer, Data
+from metaperceptron import MlpRegressor, MlpClassifier
+from metaperceptron import MhaMlpRegressor, MhaMlpClassifier
 ```
 
-#### Utilities everything that Reflame provided
+2) What you can do with `DataTransformer` class
+
+We provide many scaler classes that you can select and make a combination of transforming your data via 
+DataTransformer class. For example: 
+
+2.1) I want to scale data by `Loge` and then `Sqrt` and then `MinMax`:
 
 ```python
-### Step 1: Importing the libraries
-from metaperceptron import Data, MlpRegressor, MlpClassifier, MhaMlpRegressor, MhaMlpClassifier
-from sklearn.datasets import load_digits
+from metaperceptron import DataTransformer
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
-#### Step 2: Reading the dataset
-X, y = load_digits(return_X_y=True)
-data = Data(X, y)
+dataset = pd.read_csv('Position_Salaries.csv')
+X = dataset.iloc[:, 1:5].values
+y = dataset.iloc[:, 5].values
+X_train, y_train, X_test, y_test = train_test_split(X, y, test_size=0.2)
 
-#### Step 3: Next, split dataset into train and test set
-data.split_train_test(test_size=0.2, shuffle=True, random_state=100)
+dt = DataTransformer(scaling_methods=("loge", "sqrt", "minmax"))
+X_train_scaled = dt.fit_transform(X_train)
+X_test_scaled = dt.transform(X_test)
+```
 
-#### Step 4: Feature Scaling
-data.X_train, scaler_X = data.scale(data.X_train, scaling_methods=("minmax"))
+2.2) I want to scale data by `YeoJohnson` and then `Standard`:
+
+```python
+from metaperceptron import DataTransformer
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+dataset = pd.read_csv('Position_Salaries.csv')
+X = dataset.iloc[:, 1:5].values
+y = dataset.iloc[:, 5].values
+X_train, y_train, X_test, y_test = train_test_split(X, y, test_size=0.2)
+
+dt = DataTransformer(scaling_methods=("yeo-johnson", "standard"))
+X_train_scaled = dt.fit_transform(X_train)
+X_test_scaled = dt.transform(X_test)
+```
+
+3) What can you do with `Data` class
++ You can load your dataset into Data class
++ You can split dataset to train and test set
++ You can scale dataset without using DataTransformer class
++ You can scale labels using LabelEncoder
+
+```python
+from metaperceptron import Data
+import pandas as pd
+
+dataset = pd.read_csv('Position_Salaries.csv')
+X = dataset.iloc[:, 1:5].values
+y = dataset.iloc[:, 5].values
+
+data = Data(X, y, name="position_salaries")
+
+#### Split dataset into train and test set
+data.split_train_test(test_size=0.2, shuffle=True, random_state=100, inplace=True)
+
+#### Feature Scaling
+data.X_train, scaler_X = data.scale(data.X_train, scaling_methods=("standard", "sqrt", "minmax"))
 data.X_test = scaler_X.transform(data.X_test)
 
 data.y_train, scaler_y = data.encode_label(data.y_train)  # This is for classification problem only
 data.y_test = scaler_y.transform(data.y_test)
+```
 
-#### Step 5: Fitting MLP-based core to the dataset
+4) What can you do with all model classes
++ Define the model 
++ Use provides functions to train, predict, and evaluate model
 
-##### 5.1: Use standard MLP core for regression problem
-regressor = MlpRegressor(expand_name="chebyshev", n_funcs=4, act_name="tanh",
-                          obj_name="MSE", max_epochs=100, batch_size=32, optimizer="SGD", verbose=True)
-regressor.fit(data.X_train, data.y_train)
+```python
+from metaperceptron import MlpRegressor, MlpClassifier, MhaMlpRegressor, MhaMlpClassifier
 
-##### 5.2: Use standard MLP core for classification problem 
-classifer = MlpClassifier(expand_name="chebyshev", n_funcs=4, act_name="tanh",
-                           obj_name="BCEL", max_epochs=100, batch_size=32, optimizer="SGD", verbose=True)
-classifer.fit(data.X_train, data.y_train)
+## Use standard MLP model for regression problem
+regressor = MlpRegressor(hidden_size=50, act1_name="tanh", act2_name="sigmoid", obj_name="MSE",
+                 max_epochs=1000, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=False)
 
-##### 5.3: Use Metaheuristic-based MLP core for regression problem
+## Use standard MLP model for classification problem 
+classifier = MlpClassifier(hidden_size=50, act1_name="tanh", act2_name="sigmoid", obj_name="NLLL",
+                 max_epochs=1000, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=False)
+
+## Use Metaheuristic-optimized MLP model for regression problem
 print(MhaMlpClassifier.SUPPORTED_OPTIMIZERS)
 print(MhaMlpClassifier.SUPPORTED_REG_OBJECTIVES)
-opt_paras = {"name": "GA", "epoch": 10, "pop_size": 30}
-model = MhaMlpRegressor(expand_name="chebyshev", n_funcs=3, act_name="elu",
-                         obj_name="RMSE", optimizer="BaseGA", optimizer_paras=opt_paras, verbose=True)
-regressor.fit(data.X_train, data.y_train)
 
-##### 5.4: Use Metaheuristic-based MLP core for classification problem
+opt_paras = {"name": "WOA", "epoch": 100, "pop_size": 30}
+regressor = MhaMlpRegressor(hidden_size=50, act1_name="tanh", act2_name="sigmoid",
+                 obj_name="MSE", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
+
+## Use Metaheuristic-optimized MLP model for classification problem
 print(MhaMlpClassifier.SUPPORTED_OPTIMIZERS)
 print(MhaMlpClassifier.SUPPORTED_CLS_OBJECTIVES)
-opt_paras = {"name": "GA", "epoch": 10, "pop_size": 30}
-classifier = MhaMlpClassifier(expand_name="chebyshev", n_funcs=4, act_name="sigmoid",
-                               obj_name="NPV", optimizer="BaseGA", optimizer_paras=opt_paras, verbose=True)
-classifier.fit(data.X_train, data.y_train)
 
-#### Step 6: Predicting a new result
-y_pred = regressor.predict(data.X_test)
-
-y_pred_cls = classifier.predict(data.X_test)
-y_pred_label = scaler_y.inverse_transform(y_pred_cls)
-
-#### Step 7: Calculate metrics using score or scores functions.
-print("Try my AS metric with score function")
-print(regressor.score(data.X_test, data.y_test, method="AS"))
-
-print("Try my multiple metrics with scores function")
-print(classifier.scores(data.X_test, data.y_test, list_methods=["AS", "PS", "F1S", "CEL", "BSL"]))
+opt_paras = {"name": "WOA", "epoch": 100, "pop_size": 30}
+classifier = MhaMlpClassifier(hidden_size=50, act1_name="tanh", act2_name="softmax",
+                 obj_name="CEL", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
 ```
 
-A real-world dataset contains features that vary in magnitudes, units, and range. We would suggest performing 
-normalization when the scale of a feature is irrelevant or misleading. Feature Scaling basically helps to normalize 
-the data within a particular range.
-
-
-
-1) Where do I find the supported metrics like above ["AS", "PS", "RS"]. What is that?
-You can find it here: https://github.com/thieu1995/permetrics or use this
+5) What can you do with model object
 
 ```python
-from metaperceptron import MhaMlpClassifier, MhaMlpRegressor
+from metaperceptron import MlpRegressor, Data 
 
-print(MhaMlpRegressor.SUPPORTED_REG_OBJECTIVES)
-print(MhaMlpClassifier.SUPPORTED_CLS_OBJECTIVES)
+data = Data()       # Assumption that you have provide this object like above
+
+model = MlpRegressor(hidden_size=50, act1_name="tanh", act2_name="sigmoid", obj_name="MSE",
+                 max_epochs=1000, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=False)
+
+## Train the model
+model.fit(data.X_train, data.y_train)
+
+## Predicting a new result
+y_pred = model.predict(data.X_test)
+
+## Calculate metrics using score or scores functions.
+print(model.score(data.X_test, data.y_test, method="MAE"))
+print(model.scores(data.X_test, data.y_test, list_methods=["MAPE", "NNSE", "KGE", "MASE", "R2", "R", "R2S"]))
+
+## Calculate metrics using evaluate function
+print(model.evaluate(data.y_test, y_pred, list_metrics=("MSE", "RMSE", "MAPE", "NSE")))
+
+## Save performance metrics to csv file
+model.save_evaluation_metrics(data.y_test, y_pred, list_metrics=("RMSE", "MAE"), save_path="history", filename="metrics.csv")
+
+## Save training loss to csv file
+model.save_training_loss(save_path="history", filename="loss.csv")
+
+## Save predicted label
+model.save_y_predicted(X=data.X_test, y_true=data.y_test, save_path="history", filename="y_predicted.csv")
+
+## Save model
+model.save_model(save_path="history", filename="traditional_mlp.pkl")
+
+## Load model 
+trained_model = MlpRegressor.load_model(load_path="history", filename="traditional_mlp.pkl")
 ```
-
-2) I got this type of error
-
-```code
-raise ValueError("Existed at least one new label in y_pred.")
-ValueError: Existed at least one new label in y_pred.
-``` 
-How to solve this?
-
-+ This occurs only when you are working on a classification problem with a small dataset that has many classes. For 
-  instance, the "Zoo" dataset contains only 101 samples, but it has 7 classes. If you split the dataset into a 
-  training and testing set with a ratio of around 80% - 20%, there is a chance that one or more classes may appear 
-  in the testing set but not in the training set. As a result, when you calculate the performance metrics, you may 
-  encounter this error. You cannot predict or assign new data to a new label because you have no knowledge about the 
-  new label. There are several solutions to this problem.
-
-+ 1st: Use the SMOTE method to address imbalanced data and ensure that all classes have the same number of samples.
-
-```python
-import pandas as pd
-from imblearn.over_sampling import SMOTE
-from metaperceptron import Data
-
-dataset = pd.read_csv('examples/dataset.csv', index_col=0).values
-X, y = dataset[:, 0:-1], dataset[:, -1]
-
-X_new, y_new = SMOTE().fit_resample(X, y)
-data = Data(X_new, y_new)
-```
-
-+ 2nd: Use different random_state numbers in split_train_test() function.
-
-```python
-import pandas as pd
-from metaperceptron import Data
-
-dataset = pd.read_csv('examples/dataset.csv', index_col=0).values
-X, y = dataset[:, 0:-1], dataset[:, -1]
-data = Data(X, y)
-data.split_train_test(test_size=0.2, random_state=10)  # Try different random_state value 
-```
-
 
 # Support (questions, problems)
 

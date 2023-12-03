@@ -1,9 +1,7 @@
 
+examples/helpers/history/
 metaperceptron/data/
-run_fs.py
 docs/
-metaperceptron34234/
-examples/utils/
 # Pycharm
 .idea/
 tut_upcode.md
