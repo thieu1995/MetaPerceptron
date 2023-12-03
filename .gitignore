@@ -1,7 +1,6 @@
 
 examples/helpers/history/
 metaperceptron/data/
-docs/
 # Pycharm
 .idea/
 tut_upcode.md
