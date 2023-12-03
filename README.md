@@ -123,7 +123,7 @@ $ python
 
 ### Examples
 
-Please check all use cases and examples in folder (examples)[\examples].
+Please check all use cases and examples in folder [examples](\examples).
 
 1) MetaPerceptron provides this useful classes
 
