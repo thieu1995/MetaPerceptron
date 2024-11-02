@@ -84,6 +84,7 @@ class CustomMLP(nn.Module):
         - dropout_rates (list of float): Dropout rates for each hidden layer.
         - task (str): Task type, "classification", "binary_classification", or "regression".
         - act_output (str or None): Activation function for the output layer; uses default if None.
+        - seed (int or None): The random seed for reproducibility
     """
 
     SUPPORTED_ACTIVATIONS = [
@@ -95,15 +96,22 @@ class CustomMLP(nn.Module):
     ]
 
     def __init__(self, size_input, size_output, hidden_layers, act_names, dropout_rates,
-                 task="classification", act_output=None):
+                 task="classification", act_output=None, seed=None):
         """
         Initialize a customizable multi-layer perceptron (MLP) model.
         """
         super(CustomMLP, self).__init__()
 
+        if seed is not None:
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+
         # Ensure hidden_layers is a valid list, tuple, or numpy array
-        if not isinstance(hidden_layers, (list, tuple, np.ndarray)):
+        if not isinstance(hidden_layers, (list, tuple, np.ndarray, int)):
             raise TypeError('hidden_layers must be a list or tuple or a numpy array.')
+        if type(hidden_layers) is int:
+            hidden_layers = [hidden_layers]
 
         # Ensure act_names is a valid list, tuple, numpy array, or str
         if not isinstance(act_names, (list, tuple, np.ndarray, str)):
@@ -237,6 +245,8 @@ class BaseMlp(BaseEstimator):
         Task type, either "classification" or "regression". Default is "classification".
     act_output : str or None, optional
         Activation function for the output layer, default depends on the task type.
+    seed: int or None, optional
+        The seed value for the random number generator.
 
     Attributes
     ----------
@@ -249,12 +259,13 @@ class BaseMlp(BaseEstimator):
     SUPPORTED_CLS_METRICS = get_all_classification_metrics()
     SUPPORTED_REG_METRICS = get_all_regression_metrics()
 
-    def __init__(self, hidden_layers, act_names, dropout_rates, task="classification", act_output=None):
+    def __init__(self, hidden_layers, act_names, dropout_rates, task="classification", act_output=None, seed=None):
         self.hidden_layers = hidden_layers
         self.act_names = act_names
         self.dropout_rates = dropout_rates
         self.task = task
         self.act_output = act_output
+        self.seed = seed
         self.network = None
         self.loss_train = None
 
@@ -279,6 +290,21 @@ class BaseMlp(BaseEstimator):
             return validator.check_str("method", method, list_supported_methods)
         else:
             raise ValueError(f"method should be a string and belong to {list_supported_methods}")
+
+    def set_seed(self, seed):
+        """
+        Set the random seed for the model to ensure reproducibility.
+
+        Parameters:
+            seed (int, None): The seed value to use for random number generators within the model.
+
+        Notes:
+            - This method stores the seed value in the `self.seed` attribute.
+            - Setting a seed helps achieve reproducible results, especially in
+              training neural networks where randomness affects initialization and
+              other stochastic operations.
+        """
+        self.seed = seed
 
     def fit(self, X, y):
         """
@@ -544,7 +570,7 @@ class BaseStandardMlp(BaseMlp):
         """
         Initialize the MLP with user-defined architecture, training parameters, and optimization settings.
         """
-        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output)
+        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output, seed=seed)
         self.epochs = epochs
         self.batch_size = batch_size
         self.optim = optim
@@ -553,7 +579,6 @@ class BaseStandardMlp(BaseMlp):
         self.n_patience = n_patience
         self.epsilon = epsilon
         self.valid_rate = valid_rate
-        self.seed = seed
         self.verbose = verbose
 
         # Internal attributes for model, optimizer, and early stopping
@@ -579,7 +604,7 @@ class BaseStandardMlp(BaseMlp):
 
         # Define model, optimizer, and loss criterion based on task
         self.network = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
-                               self.dropout_rates, self.task, self.act_output)
+                               self.dropout_rates, self.task, self.act_output, self.seed)
         self.optimizer = getattr(torch.optim, self.optim)(self.network.parameters(), **self.optim_paras)
 
         # Select loss function based on task type
@@ -653,13 +678,15 @@ class BaseStandardMlp(BaseMlp):
                 if self.early_stopping and self.early_stopper.early_stop(val_loss):
                     print(f"Early stopping at epoch {epoch + 1}")
                     break
-                print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}, Validation Loss: {val_loss:.4f}")
+                if self.verbose:
+                    print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}, Validation Loss: {val_loss:.4f}")
             else:
                 # Early stopping based on training loss if no validation is used
                 if self.early_stopping and self.early_stopper.early_stop(avg_loss):
                     print(f"Early stopping at epoch {epoch + 1}")
                     break
-                print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}")
+                if self.verbose:
+                    print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}")
 
             # Return to training mode for next epoch
             self.network.train()
@@ -733,10 +760,9 @@ class BaseMhaMlp(BaseMlp):
         """
         Initializes the BaseMhaMlp class.
         """
-        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output)
+        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output, seed=seed)
         self.optim = optim
         self.optim_paras = optim_paras
-        self.seed = seed
         self.verbose = verbose
 
         # Initialize model parameters
@@ -747,9 +773,23 @@ class BaseMhaMlp(BaseMlp):
         self.obj_name = obj_name
         self.metric_class = None
 
+    def set_optim_and_paras(self, optim=None, optim_paras=None):
+        """
+        Sets the `optim` and `optim_paras` parameters for this class.
+
+        Parameters
+        ----------
+        optim : str
+            The optimizer name to be set.
+        optim_paras : dict
+            Parameters to configure the optimizer.
+        """
+        self.optim = optim
+        self.optim_paras = optim_paras
+
     def _set_optimizer(self, optim=None, optim_paras=None):
         """
-        Sets the optimizer based on the provided optimizer name or instance.
+        Validates the real optimizer based on the provided `optim` and `optim_pras`.
 
         Parameters
         ----------
@@ -781,6 +821,25 @@ class BaseMhaMlp(BaseMlp):
         else:
             raise TypeError(f"optimizer needs to set as a string and supported by Mealpy library.")
 
+    def get_name(self):
+        """
+        Generate a descriptive name for the MLP model based on the optimizer.
+
+        Returns:
+            str: A string representing the name of the model, including details
+            about the optimizer used. If `self.optim` is a string, the name
+            will be formatted as "<self.optim_paras>-MLP". Otherwise, it will
+            return "<self.optimizer.name>-MLP", assuming `self.optimizer` is an
+            object with a `name` attribute.
+
+        Notes:
+            - This method relies on the presence of `self.optim`, `self.optim_paras`,
+              and `self.optimizer.name` attributes within the model instance.
+            - It is intended to provide a consistent naming scheme for model instances
+              based on the optimizer configuration.
+        """
+        return f"{self.optimizer.name}-MLP-{self.optim_paras}"
+
     def build_model(self):
         """
         Builds the model architecture and sets the optimizer and loss function based on the task.
@@ -794,13 +853,6 @@ class BaseMhaMlp(BaseMlp):
                                self.dropout_rates, self.task, self.act_output)
 
         self.optimizer = self._set_optimizer(self.optim, self.optim_paras)
-
-        if self.task == "classification":
-            self.criterion = nn.CrossEntropyLoss()
-        elif self.task == "binary_classification":
-            self.criterion = nn.BCEWithLogitsLoss()
-        else:  # regression or multi_regression
-            self.criterion = nn.MSELoss()
 
     def _set_lb_ub(self, lb=None, ub=None, n_dims=None):
         """
