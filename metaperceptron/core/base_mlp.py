@@ -102,8 +102,10 @@ class CustomMLP(nn.Module):
         super(CustomMLP, self).__init__()
 
         # Ensure hidden_layers is a valid list, tuple, or numpy array
-        if not isinstance(hidden_layers, (list, tuple, np.ndarray)):
+        if not isinstance(hidden_layers, (list, tuple, np.ndarray, int)):
             raise TypeError('hidden_layers must be a list or tuple or a numpy array.')
+        if type(hidden_layers) is int:
+            hidden_layers = [hidden_layers]
 
         # Ensure act_names is a valid list, tuple, numpy array, or str
         if not isinstance(act_names, (list, tuple, np.ndarray, str)):
@@ -794,13 +796,6 @@ class BaseMhaMlp(BaseMlp):
                                self.dropout_rates, self.task, self.act_output)
 
         self.optimizer = self._set_optimizer(self.optim, self.optim_paras)
-
-        if self.task == "classification":
-            self.criterion = nn.CrossEntropyLoss()
-        elif self.task == "binary_classification":
-            self.criterion = nn.BCEWithLogitsLoss()
-        else:  # regression or multi_regression
-            self.criterion = nn.MSELoss()
 
     def _set_lb_ub(self, lb=None, ub=None, n_dims=None):
         """
