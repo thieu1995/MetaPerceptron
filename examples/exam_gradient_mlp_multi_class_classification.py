@@ -1,15 +1,15 @@
 #!/usr/bin/env python
-# Created by "Thieu" at 08:24, 25/10/2023 ----------%                                                                               
+# Created by "Thieu" at 16:38, 25/10/2023 ----------%                                                                               
 #       Email: nguyenthieu2102@gmail.com            %                                                    
 #       Github: https://github.com/thieu1995        %                         
 # --------------------------------------------------%
 
 from metaperceptron import Data, MlpClassifier
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import load_iris
 
 
 ## Load data object
-X, y = load_breast_cancer(return_X_y=True)
+X, y = load_iris(return_X_y=True)
 data = Data(X, y)
 
 ## Split train and test
@@ -26,18 +26,17 @@ data.y_test = scaler_y.transform(data.y_test)
 print(type(data.X_train), type(data.y_train))
 
 ## Create model
-model = MlpClassifier(hidden_size=25, act1_name="tanh", act2_name="sigmoid", obj_name="BCEL",
-                      max_epochs=10, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=True)
-
+model = MlpClassifier(hidden_layers=(30,), act_names="Tanh", dropout_rates=None, act_output=None,
+                    epochs=10, batch_size=16, optim="Adam", optim_paras=None,
+                    early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
+                    seed=42, verbose=True)
 ## Train the model
 model.fit(X=data.X_train, y=data.y_train)
 
 ## Test the model
-y_pred = model.predict(data.X_test, return_prob=True)
+y_pred = model.predict(data.X_test)
 print(y_pred)
-print(model.predict(data.X_test, return_prob=False))
+print(model.predict_proba(data.X_test))
 
 ## Calculate some metrics
-print(model.score(X=data.X_test, y=data.y_test, method="AS"))
-print(model.scores(X=data.X_test, y=data.y_test, list_methods=["PS", "RS", "NPV", "F1S", "F2S"]))
-print(model.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["F2S", "CKS", "FBS"]))
+print(model.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["F2S", "CKS", "FBS", "PS", "RS", "NPV", "F1S"]))

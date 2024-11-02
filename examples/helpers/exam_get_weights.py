@@ -21,13 +21,15 @@ data = Data(X, y, name="RandomData")
 data.split_train_test(test_size=0.2, random_state=2)
 
 opt_paras = {"name": "WOA", "epoch": 10, "pop_size": 30}
-model = MhaMlpClassifier(hidden_size=50, act1_name="tanh", act2_name="sigmoid",
-                         obj_name="NPV", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
+model = MhaMlpClassifier(hidden_layers=(100,), act_names="ELU", dropout_rates=0.2, act_output=None,
+                       optim="BaseGA", optim_paras=opt_paras, obj_name="F1S", seed=42, verbose=True)
 model.fit(data.X_train, data.y_train)
 y_pred = model.predict(data.X_test)
 
 ## Get parameters for model
 print(model.get_params())
 
-## Get weights of neural network (ELM network)
+## Get weights of neural network
 print(model.network.get_weights())
+
+print(model.network)

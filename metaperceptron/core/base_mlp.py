@@ -1,51 +1,66 @@
 #!/usr/bin/env python
 # Created by "Thieu" at 14:17, 26/10/2024 ----------%
-#       Email: nguyenthieu2102@gmail.com            %                                                    
-#       Github: https://github.com/thieu1995        %                         
+#       Email: nguyenthieu2102@gmail.com            %
+#       Github: https://github.com/thieu1995        %
 # --------------------------------------------------%
 
-"""
-The structure and idea of this module is followed:
-
-CustomMLP class
-
-BaseMlp class: Inherit BaseEstimator from Scikit-Learn
-    .Contains CustomMLP object
-    .Below are subclass
-
-    BaseStandardMlp class       - Gradient-based training
-        MlpRegressor class
-        MlpClassifier class
-
-    BaseMhaMlp class            - Metaheuristic-based training
-        MhaMlpRegressor class
-        MhaMlpClassifier class
-
-"""
-
+from typing import TypeVar
 import numpy as np
+import pickle
+import pandas as pd
+from pathlib import Path
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset, DataLoader
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, r2_score
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-from metaperceptron.helpers.metric_util import get_all_regression_metrics, get_all_classification_metrics
+from sklearn.base import BaseEstimator
 from mealpy import get_optimizer_by_name, Optimizer, get_all_optimizers, FloatVar
+from permetrics import ClassificationMetric, RegressionMetric
+from metaperceptron.helpers.metric_util import get_all_regression_metrics, get_all_classification_metrics
+from metaperceptron.helpers import validator
+
+# Create a TypeVar for the base class
+EstimatorType = TypeVar('EstimatorType', bound='BaseMlp')
 
 
 class EarlyStopper:
+    """
+    A utility class for implementing early stopping in training processes to prevent overfitting.
+
+    Attributes:
+        - patience (int): Number of consecutive epochs to tolerate no improvement before stopping.
+        - epsilon (float): Minimum loss improvement threshold to reset the patience counter.
+        - counter (int): Tracks the number of epochs without sufficient improvement.
+        - min_loss (float): Keeps track of the minimum observed loss.
+    """
+
     def __init__(self, patience=1, epsilon=0.01):
+        """
+        Initialize the EarlyStopper with specified patience and epsilon.
+
+        Parameters:
+            - patience (int): Maximum number of epochs without improvement before stopping.
+            - epsilon (float): Minimum loss reduction to reset the patience counter.
+        """
         self.patience = patience
         self.epsilon = epsilon
         self.counter = 0
         self.min_loss = float('inf')
 
     def early_stop(self, loss):
+        """
+        Checks if training should be stopped based on the current loss.
+
+        Parameters:
+            - loss (float): The current loss value for the epoch.
+
+        Returns:
+            - bool: True if training should stop, False otherwise.
+        """
         if loss < self.min_loss:
+            # Loss has improved; reset counter and update min_loss
             self.min_loss = loss
             self.counter = 0
         elif loss > (self.min_loss + self.epsilon):
+            # Loss did not improve sufficiently; increment counter
             self.counter += 1
             if self.counter >= self.patience:
                 return True
@@ -53,60 +68,70 @@ class EarlyStopper:
 
 
 class CustomMLP(nn.Module):
+    """
+    A customizable multi-layer perceptron (MLP) model with flexible hidden layers, activations,
+    and dropout rates, suitable for various tasks such as classification and regression.
+
+    Attributes:
+        - SUPPORTED_ACTIVATIONS (list of str): A list of supported activation function names.
+        - network (nn.Sequential): The constructed MLP network with layers.
+
+    Parameters:
+        - size_input (int): Number of input features.
+        - size_output (int): Number of output nodes.
+        - hidden_layers (list of int): Number of nodes in each hidden layer.
+        - act_names (list of str or nn.Module): Activation functions for each hidden layer.
+        - dropout_rates (list of float): Dropout rates for each hidden layer.
+        - task (str): Task type, "classification", "binary_classification", or "regression".
+        - act_output (str or None): Activation function for the output layer; uses default if None.
+    """
 
     SUPPORTED_ACTIVATIONS = [
-        "Threshold","ReLU","RReLU","Hardtanh","ReLU6",
-        "Sigmoid", "Hardsigmoid", "Tanh","SiLU", "Mish","Hardswish","ELU",
-        "CELU", "SELU","GLU","GELU","Hardshrink", "LeakyReLU",
-        "LogSigmoid", "Softplus","Softshrink", "MultiheadAttention","PReLU",
-        "Softsign", "Tanhshrink","Softmin","Softmax", "Softmax2d","LogSoftmax",
+        "Threshold", "ReLU", "RReLU", "Hardtanh", "ReLU6",
+        "Sigmoid", "Hardsigmoid", "Tanh", "SiLU", "Mish", "Hardswish", "ELU",
+        "CELU", "SELU", "GLU", "GELU", "Hardshrink", "LeakyReLU",
+        "LogSigmoid", "Softplus", "Softshrink", "MultiheadAttention", "PReLU",
+        "Softsign", "Tanhshrink", "Softmin", "Softmax", "Softmax2d", "LogSoftmax",
     ]
 
     def __init__(self, size_input, size_output, hidden_layers, act_names, dropout_rates,
                  task="classification", act_output=None):
         """
         Initialize a customizable multi-layer perceptron (MLP) model.
-
-        Parameters:
-            - size_input (int): The number of input features.
-            - hidden_layers (list of int): A list specifying the number of nodes in each hidden layer.
-            - output_size (int): The number of output nodes.
-            - act_names (list of nn.Module): A list of activation functions, one for each hidden layer.
-            - dropout_rates (list of float): A list of dropout rates, one for each hidden layer (0 means no dropout).
         """
         super(CustomMLP, self).__init__()
 
+        # Ensure hidden_layers is a valid list, tuple, or numpy array
         if not isinstance(hidden_layers, (list, tuple, np.ndarray)):
             raise TypeError('hidden_layers must be a list or tuple or a numpy array.')
 
+        # Ensure act_names is a valid list, tuple, numpy array, or str
         if not isinstance(act_names, (list, tuple, np.ndarray, str)):
             raise TypeError('act_names must be a list or tuple or a numpy array or name of activation functions.')
         else:
             if type(act_names) is str:
                 act_names = [act_names] * len(hidden_layers)
-            else:
-                if len(act_names) != len(hidden_layers):
-                    raise ValueError('if act_names is list, then len(act_names) must equal len(hidden_layers).')
+            elif len(act_names) != len(hidden_layers):
+                raise ValueError('if act_names is list, then len(act_names) must equal len(hidden_layers).')
 
+        # Configure dropout rates
         if dropout_rates is None:
             dropout_rates = [0] * len(hidden_layers)
         elif isinstance(dropout_rates, (list, tuple, np.ndarray, float)):
             if type(dropout_rates) is float and 0 < dropout_rates < 1:
                 dropout_rates = [dropout_rates] * len(hidden_layers)
-            else:
-                if len(dropout_rates) != len(hidden_layers):
-                    raise ValueError('if dropout_rates is list, then len(dropout_rates) must equal len(hidden_layers).')
+            elif len(dropout_rates) != len(hidden_layers):
+                raise ValueError('if dropout_rates is list, then len(dropout_rates) must equal len(hidden_layers).')
         else:
             raise TypeError('dropout_rates must be a list or tuple or a numpy array or float.')
 
-        # Check last activation of output
-        # Output layer activation based on task type
+        # Determine activation for the output layer based on the task
         if act_output is None:
             if task == 'classification':
-                act_out = nn.Softmax(dim=0)
+                act_out = nn.Softmax(dim=1)
             elif task == 'binary_classification':
                 act_out = nn.Sigmoid()
-            else:  # 'regression'
+            else:  # regression
                 act_out = nn.Identity()
         else:
             act_out = self._get_act(act_output)()
@@ -115,15 +140,15 @@ class CustomMLP(nn.Module):
         layers = []
         in_features = size_input
 
-        # Add each hidden layer with specified nodes, activation, and dropout
+        # Create each hidden layer with specified activation and dropout
         for out_features, act, dropout in zip(hidden_layers, act_names, dropout_rates):
             layers.append(nn.Linear(in_features, out_features))
             layers.append(self._get_act(act))
             if dropout > 0:
                 layers.append(nn.Dropout(dropout))
-            in_features = out_features  # Set input for the next layer as output of current layer
+            in_features = out_features  # Update input for next layer
 
-        # Output layer
+        # Add output layer
         layers.append(nn.Linear(in_features, size_output))
         layers.append(act_out)
 
@@ -131,14 +156,21 @@ class CustomMLP(nn.Module):
         self.network = nn.Sequential(*layers)
 
     def _get_act(self, act_name):
+        """
+        Retrieve the activation function by name.
+
+        Parameters:
+            - act_name (str): Name of the activation function.
+
+        Returns:
+            - nn.Module: The activation function module.
+        """
         if act_name == "Softmax":
-            act_func = nn.Softmax(dim=0)
+            return nn.Softmax(dim=0)
         elif act_name == "none":
-            act_func = nn.Identity()
+            return nn.Identity()
         else:
-            # act_func = getattr(nn.functional, act_name)
-            act_func = getattr(nn.modules.activation, act_name)()
-        return act_func
+            return getattr(nn.modules.activation, act_name)()
 
     def forward(self, x):
         """
@@ -152,40 +184,352 @@ class CustomMLP(nn.Module):
         """
         return self.network(x)
 
-    # Flatten and set network weights from a chromosome (solution)
     def set_weights(self, solution):
+        """
+        Set network weights based on a given solution vector.
+
+        Parameters:
+            - solution (np.ndarray): A flat array of weights to set in the model.
+        """
         with torch.no_grad():
             idx = 0
             for param in self.network.parameters():
                 param_size = param.numel()
-                param.copy_(torch.tensor(solution[idx:idx + param_size]).view(param.shape))
+                # Ensure dtype and device consistency
+                param.copy_(torch.tensor(solution[idx:idx + param_size], dtype=param.dtype, device=param.device).view(param.shape))
                 idx += param_size
 
-    # Convert network weights to a chromosome (solution)
     def get_weights(self):
+        """
+        Retrieve network weights as a flattened array.
+
+        Returns:
+            - np.ndarray: Flattened array of the model's weights.
+        """
         return np.concatenate([param.data.cpu().numpy().flatten() for param in self.network.parameters()])
+
+    def get_weights_size(self):
+        """
+        Calculate the total number of trainable parameters in the model.
+
+        Returns:
+            - int: Total number of parameters.
+        """
+        return sum(param.numel() for param in self.parameters() if param.requires_grad)
 
 
 # Custom Sklearn-compatible MLP using PyTorch
 class BaseMlp(BaseEstimator):
-    def  __init__(self, hidden_layers, act_names, dropout_rates, task="classification", act_output=None):
+    """
+    A custom MLP model compatible with sklearn, implemented using PyTorch. This class supports
+    Multi-Layer Perceptron for both classification and regression tasks, with customizable
+    hidden layers, activation functions, and dropout rates.
+
+    Parameters
+    ----------
+    hidden_layers : list of int
+        Specifies the number of nodes in each hidden layer.
+    act_names : list of str
+        List of activation function names, one for each hidden layer.
+    dropout_rates : list of float
+        Dropout rates for each hidden layer (0 indicates no dropout).
+    task : str, optional
+        Task type, either "classification" or "regression". Default is "classification".
+    act_output : str or None, optional
+        Activation function for the output layer, default depends on the task type.
+
+    Attributes
+    ----------
+    SUPPORTED_CLS_METRICS : dict
+        Supported metrics for classification evaluation.
+    SUPPORTED_REG_METRICS : dict
+        Supported metrics for regression evaluation.
+    """
+
+    SUPPORTED_CLS_METRICS = get_all_classification_metrics()
+    SUPPORTED_REG_METRICS = get_all_regression_metrics()
+
+    def __init__(self, hidden_layers, act_names, dropout_rates, task="classification", act_output=None):
         self.hidden_layers = hidden_layers
         self.act_names = act_names
         self.dropout_rates = dropout_rates
         self.task = task
         self.act_output = act_output
+        self.network = None
+        self.loss_train = None
+
+    @staticmethod
+    def _check_method(method=None, list_supported_methods=None):
+        """
+        Validates if the given method is supported.
+
+        Parameters
+        ----------
+        method : str
+            The method to be checked.
+        list_supported_methods : list of str
+            A list of supported method names.
+
+        Returns
+        -------
+        bool
+            True if the method is supported; otherwise, raises ValueError.
+        """
+        if type(method) is str:
+            return validator.check_str("method", method, list_supported_methods)
+        else:
+            raise ValueError(f"method should be a string and belong to {list_supported_methods}")
 
     def fit(self, X, y):
+        """
+        Train the MLP model on the given dataset.
+
+        Parameters
+        ----------
+        X : array-like or torch.Tensor
+            Training features.
+        y : array-like or torch.Tensor
+            Target values.
+        """
         pass
 
     def predict(self, X):
+        """
+        Generate predictions for input data using the trained model.
+
+        Parameters
+        ----------
+        X : array-like or torch.Tensor
+            Input features for prediction.
+
+        Returns
+        -------
+        array-like or torch.Tensor
+            Model predictions for each input sample.
+        """
         pass
 
     def score(self, X, y):
+        """
+        Evaluate the model on the given dataset.
+
+        Parameters
+        ----------
+        X : array-like or torch.Tensor
+            Evaluation features.
+        y : array-like or torch.Tensor
+            True values.
+
+        Returns
+        -------
+        float
+            The accuracy or evaluation score.
+        """
         pass
+
+    def __evaluate_reg(self, y_true, y_pred, list_metrics=("MSE", "MAE")):
+        """
+        Evaluate regression performance metrics.
+
+        Parameters
+        ----------
+        y_true : array-like
+            True target values.
+        y_pred : array-like
+            Predicted values.
+        list_metrics : tuple of str, list of str
+            List of metrics for evaluation (e.g., "MSE" and "MAE").
+
+        Returns
+        -------
+        dict
+            Dictionary of calculated metric values.
+        """
+        rm = RegressionMetric(y_true=y_true, y_pred=y_pred)
+        return rm.get_metrics_by_list_names(list_metrics)
+
+    def __evaluate_cls(self, y_true, y_pred, list_metrics=("AS", "RS")):
+        """
+        Evaluate classification performance metrics.
+
+        Parameters
+        ----------
+        y_true : array-like
+            True target values.
+        y_pred : array-like
+            Predicted labels.
+        list_metrics : tuple of str, list of str
+            List of metrics for evaluation (e.g., "AS" and "RS").
+
+        Returns
+        -------
+        dict
+            Dictionary of calculated metric values.
+        """
+        cm = ClassificationMetric(y_true, y_pred)
+        return cm.get_metrics_by_list_names(list_metrics)
+
+    def evaluate(self, y_true, y_pred, list_metrics=None):
+        """
+        Evaluate the model using specified metrics.
+
+        Parameters
+        ----------
+        y_true : array-like
+            True target values.
+        y_pred : array-like
+            Model's predicted values.
+        list_metrics : list of str, optional
+            Names of metrics for evaluation (e.g., "MSE", "MAE").
+
+        Returns
+        -------
+        dict
+            Evaluation metrics and their values.
+        """
+        pass
+
+    def save_training_loss(self, save_path="history", filename="loss.csv"):
+        """
+        Save training loss history to a CSV file.
+
+        Parameters
+        ----------
+        save_path : str, optional
+            Path to save the file (default: "history").
+        filename : str, optional
+            Filename for saving loss history (default: "loss.csv").
+        """
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+        if self.loss_train is None:
+            print(f"{self.__class__.__name__} model doesn't have training loss!")
+        else:
+            data = {"epoch": list(range(1, len(self.loss_train) + 1)), "loss": self.loss_train}
+            pd.DataFrame(data).to_csv(f"{save_path}/{filename}", index=False)
+
+    def save_evaluation_metrics(self, y_true, y_pred, list_metrics=("RMSE", "MAE"), save_path="history",
+                                filename="metrics.csv"):
+        """
+        Save evaluation metrics to a CSV file.
+
+        Parameters
+        ----------
+        y_true : array-like
+            Ground truth values.
+        y_pred : array-like
+            Model predictions.
+        list_metrics : list of str, optional
+            Metrics for evaluation (default: ("RMSE", "MAE")).
+        save_path : str, optional
+            Path to save the file (default: "history").
+        filename : str, optional
+            Filename for saving metrics (default: "metrics.csv").
+        """
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+        results = self.evaluate(y_true, y_pred, list_metrics)
+        df = pd.DataFrame.from_dict(results, orient='index').T
+        df.to_csv(f"{save_path}/{filename}", index=False)
+
+    def save_y_predicted(self, X, y_true, save_path="history", filename="y_predicted.csv"):
+        """
+        Save true and predicted values to a CSV file.
+
+        Parameters
+        ----------
+        X : array-like or torch.Tensor
+            Input features.
+        y_true : array-like
+            True values.
+        save_path : str, optional
+            Path to save the file (default: "history").
+        filename : str, optional
+            Filename for saving predicted values (default: "y_predicted.csv").
+        """
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+        y_pred = self.predict(X)
+        data = {"y_true": np.squeeze(np.asarray(y_true)), "y_pred": np.squeeze(np.asarray(y_pred))}
+        pd.DataFrame(data).to_csv(f"{save_path}/{filename}", index=False)
+
+    def save_model(self, save_path="history", filename="model.pkl"):
+        """
+        Save the trained model to a pickle file.
+
+        Parameters
+        ----------
+        save_path : str, optional
+            Path to save the model (default: "history").
+        filename : str, optional
+            Filename for saving model, with ".pkl" extension (default: "model.pkl").
+        """
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+        if filename[-4:] != ".pkl":
+            filename += ".pkl"
+        pickle.dump(self, open(f"{save_path}/{filename}", 'wb'))
+
+    @staticmethod
+    def load_model(load_path="history", filename="model.pkl") -> EstimatorType:
+        """
+        Load a model from a pickle file.
+
+        Parameters
+        ----------
+        load_path : str, optional
+            Path to load the model from (default: "history").
+        filename : str, optional
+            Filename of the saved model (default: "model.pkl").
+
+        Returns
+        -------
+        BaseMlp
+            The loaded model.
+        """
+        if filename[-4:] != ".pkl":
+            filename += ".pkl"
+        return pickle.load(open(f"{load_path}/{filename}", 'rb'))
 
 
 class BaseStandardMlp(BaseMlp):
+    """
+    A custom standard MLP (Multi-Layer Perceptron) class that extends the BaseMlp class with
+    additional features such as early stopping, validation, and various supported optimizers.
+
+    Attributes
+    ----------
+    SUPPORTED_OPTIMIZERS : list
+        A list of optimizer names supported by the class.
+
+
+    Parameters
+    ----------
+    hidden_layers : tuple
+        Number of neurons in each hidden layer.
+    act_names : str
+        Activation function(s) for each hidden layer.
+    dropout_rates : float
+        Dropout rate to prevent overfitting.
+    act_output : str
+        Activation function for the output layer.
+    epochs : int
+        Number of training epochs.
+    batch_size : int
+        Size of each training batch.
+    optim : str
+        Name of the optimizer to use from SUPPORTED_OPTIMIZERS.
+    optim_paras : dict, optional
+        Additional parameters for the optimizer.
+    early_stopping : bool
+        Flag to enable early stopping.
+    n_patience : int
+        Number of epochs to wait before stopping if no improvement.
+    epsilon : float
+        Minimum change to qualify as improvement.
+    valid_rate : float
+        Proportion of data to use for validation.
+    seed : int
+        Random seed for reproducibility.
+    verbose : bool
+        If True, outputs training progress.
+    """
 
     SUPPORTED_OPTIMIZERS = [
         "Adafactor", "Adadelta", "Adagrad", "Adam",
@@ -193,17 +537,18 @@ class BaseStandardMlp(BaseMlp):
         "RAdam", "RMSprop", "Rprop", "SGD", "SparseAdam",
     ]
 
-    def __init__(self, hidden_layers=(100, ), act_names="ReLU", dropout_rates=0.2, act_output=None,
+    def __init__(self, hidden_layers=(100,), act_names="ReLU", dropout_rates=0.2, act_output=None,
                  epochs=1000, batch_size=16, optim="Adam", optim_paras=None,
                  early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
                  seed=42, verbose=True):
+        """
+        Initialize the MLP with user-defined architecture, training parameters, and optimization settings.
+        """
         super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output)
         self.epochs = epochs
         self.batch_size = batch_size
         self.optim = optim
-        self.optim_paras = optim_paras
-        if optim_paras is None:
-            self.optim_paras = {}
+        self.optim_paras = optim_paras if optim_paras else {}
         self.early_stopping = early_stopping
         self.n_patience = n_patience
         self.epsilon = epsilon
@@ -211,9 +556,10 @@ class BaseStandardMlp(BaseMlp):
         self.seed = seed
         self.verbose = verbose
 
+        # Internal attributes for model, optimizer, and early stopping
         self.size_input = None
         self.size_output = None
-        self.model = None
+        self.network = None
         self.optimizer = None
         self.criterion = None
         self.patience_count = None
@@ -221,272 +567,231 @@ class BaseStandardMlp(BaseMlp):
         self.early_stopper = None
 
     def build_model(self):
+        """
+        Build and initialize the MLP model, optimizer, and criterion based on user specifications.
+
+        This function sets up the model structure, optimizer type and parameters,
+        and loss criterion depending on the task type (classification or regression).
+        """
         if self.early_stopping:
+            # Initialize early stopper if early stopping is enabled
             self.early_stopper = EarlyStopper(patience=self.n_patience, epsilon=self.epsilon)
 
-        self.model = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
+        # Define model, optimizer, and loss criterion based on task
+        self.network = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
                                self.dropout_rates, self.task, self.act_output)
-        self.optimizer = getattr(torch.optim, self.optim)(self.model.parameters(), **self.optim_paras)
+        self.optimizer = getattr(torch.optim, self.optim)(self.network.parameters(), **self.optim_paras)
+
+        # Select loss function based on task type
         if self.task == "classification":
             self.criterion = nn.CrossEntropyLoss()
         elif self.task == "binary_classification":
             self.criterion = nn.BCEWithLogitsLoss()
-        else:       # regression or multi_regression
+        else:
             self.criterion = nn.MSELoss()
 
     def process_data(self, X, y, **kwargs):
-        pass
+        """
+        Process and prepare data for training.
+
+        Parameters
+        ----------
+        X : array-like
+            Feature data for training.
+        y : array-like
+            Target labels or values for training.
+        **kwargs : additional keyword arguments
+            Additional parameters for data processing, if needed.
+        """
+        pass  # Placeholder for data processing logic
 
     def _fit(self, data, **kwargs):
-        # Get data
+        """
+        Train the MLP model on the provided data.
+
+        Parameters
+        ----------
+        data : tuple
+            A tuple containing (train_loader, X_valid_tensor, y_valid_tensor) for training and validation.
+        **kwargs : additional keyword arguments
+            Additional parameters for training, if needed.
+        """
+        # Unpack training and validation data
         train_loader, X_valid_tensor, y_valid_tensor = data
 
-        # Training loop
-        self.model.train()  # Set model to training mode
+        # Start training
+        self.network.train()  # Set model to training mode
         for epoch in range(self.epochs):
-
-            # Training step
+            # Initialize total loss for this epoch
             total_loss = 0.0
+
+            # Training step over batches
             for batch_X, batch_y in train_loader:
                 self.optimizer.zero_grad()  # Clear gradients
 
                 # Forward pass
-                output = self.model(batch_X)
-                # Compute loss based on classification type
-                loss = self.criterion(output, batch_y)
+                output = self.network(batch_X)
+                loss = self.criterion(output, batch_y)  # Compute loss
 
-                # Backward pass and optimizer step
+                # Backpropagation and optimization
                 loss.backward()
                 self.optimizer.step()
 
                 total_loss += loss.item()  # Accumulate batch loss
 
-            # Average loss per epoch
+            # Calculate average training loss for this epoch
             avg_loss = total_loss / len(train_loader)
 
-            # Validation step
+            # Perform validation if validation mode is enabled
             if self.valid_mode:
-                self.model.eval()
+                self.network.eval()  # Set model to evaluation mode
                 with torch.no_grad():
-                    val_output = self.model(X_valid_tensor)
+                    val_output = self.network(X_valid_tensor)
                     val_loss = self.criterion(val_output, y_valid_tensor)
 
-                if self.early_stopping:
-                    if self.early_stopper.early_stop(val_loss):
-                        print(f"Early stopping at epoch {epoch + 1}")
-                        break
+                # Early stopping based on validation loss
+                if self.early_stopping and self.early_stopper.early_stop(val_loss):
+                    print(f"Early stopping at epoch {epoch + 1}")
+                    break
                 print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}, Validation Loss: {val_loss:.4f}")
             else:
-                if self.early_stopping:
-                    if self.early_stopper.early_stop(avg_loss):
-                        print(f"Early stopping at epoch {epoch + 1}")
-                        break
+                # Early stopping based on training loss if no validation is used
+                if self.early_stopping and self.early_stopper.early_stop(avg_loss):
+                    print(f"Early stopping at epoch {epoch + 1}")
+                    break
                 print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}")
 
-            # Set back to training mode
-            self.model.train()
-
-
-class MlpClassifier(BaseStandardMlp, ClassifierMixin):
-    def __init__(self, hidden_layers=(100, ), act_names="ReLU", dropout_rates=0.2, act_output=None,
-                 epochs=1000, batch_size=16, optim="Adam", optim_paras=None,
-                 early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
-                 seed=42, verbose=True):
-        super().__init__(hidden_layers, act_names, dropout_rates, act_output,
-                         epochs, batch_size, optim, optim_paras,
-                         early_stopping, n_patience, epsilon, valid_rate, seed, verbose)
-        self.classes_ = None
-
-    def process_data(self, X, y, **kwargs):
-        X_valid_tensor, y_valid_tensor = None, None
-        # Convert data to tensors and create a DataLoader for batch processing
-        if self.valid_rate is not None:
-            if 0 < self.valid_rate < 1:
-                # Split data into training and validation sets
-                self.valid_mode = True
-                X, X_valid, y, y_valid = train_test_split(X, y, test_size=self.valid_rate,
-                                                          random_state=self.seed, shuffle=True, stratify=y)
-            else:
-                raise ValueError("Validation rate must be between 0 and 1.")
-        X_tensor = torch.tensor(X, dtype=torch.float32)
-        y_tensor = torch.tensor(y, dtype=torch.long)
-        if self.task == "binary_classification":
-            y_tensor = torch.tensor(y, dtype=torch.float32)
-            y_tensor = torch.unsqueeze(y_tensor, 1)
-        train_loader = DataLoader(TensorDataset(X_tensor, y_tensor), batch_size=self.batch_size, shuffle=True)
-
-        if self.valid_mode:
-            X_valid_tensor = torch.tensor(X_valid, dtype=torch.float32)
-            y_valid_tensor = torch.tensor(y_valid, dtype=torch.long)
-            if self.task == "binary_classification":
-                y_valid_tensor = torch.tensor(y_valid, dtype=torch.float32)
-                y_valid_tensor = torch.unsqueeze(y_valid_tensor, 1)
-        return train_loader, X_valid_tensor, y_valid_tensor
-
-    def fit(self, X, y, **kwargs):
-        ## Check the parameters
-        self.size_input = X.shape[1]
-        y = np.squeeze(np.array(y))
-        if y.ndim != 1:
-            y = np.argmax(y, axis=1)
-        self.classes_ = np.unique(y)
-        if len(self.classes_) == 2:
-            self.task = "binary_classification"
-            self.size_output = 1
-        else:
-            self.task = "classification"
-            self.size_output = len(self.classes_)
-
-        ## Process data
-        data = self.process_data(X, y, **kwargs)
-
-        ## Build model
-        self.build_model()
-
-        ## Fit the data
-        self._fit(data, **kwargs)
-
-        return self
-
-    def predict(self, X):
-        X_tensor = torch.tensor(X, dtype=torch.float32)
-        self.model.eval()
-        with torch.no_grad():
-            output = self.model(X_tensor)
-            _, predicted = torch.max(output, 1)
-        return predicted.numpy()
-
-    def score(self, X, y):
-        y_pred = self.predict(X)
-        return accuracy_score(y, y_pred)
-
-
-class MlpRegressor(BaseStandardMlp, RegressorMixin):
-    def __init__(self, hidden_layers=(100, ), act_names="ELU", dropout_rates=0.2, act_output=None,
-                 epochs=1000, batch_size=16, optim="Adam", optim_paras=None,
-                 early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
-                 seed=42, verbose=True):
-        super().__init__(hidden_layers, act_names, dropout_rates, act_output,
-                         epochs, batch_size, optim, optim_paras,
-                         early_stopping, n_patience, epsilon, valid_rate, seed, verbose)
-
-    def process_data(self, X, y, **kwargs):
-        X_valid_tensor, y_valid_tensor = None, None
-        # Convert data to tensors and create a DataLoader for batch processing
-        if self.valid_rate is not None:
-            if 0 < self.valid_rate < 1:
-                # Split data into training and validation sets
-                self.valid_mode = True
-                X, X_valid, y, y_valid = train_test_split(X, y, test_size=self.valid_rate,
-                                                          random_state=self.seed, shuffle=True)
-            else:
-                raise ValueError("Validation rate must be between 0 and 1.")
-        X_tensor = torch.tensor(X, dtype=torch.float32)
-        y_tensor = torch.tensor(y, dtype=torch.float32)
-        if y_tensor.ndim == 1:
-            y_tensor = y_tensor.unsqueeze(1)
-        train_loader = DataLoader(TensorDataset(X_tensor, y_tensor), batch_size=self.batch_size, shuffle=True)
-
-        if self.valid_mode:
-            X_valid_tensor = torch.tensor(X_valid, dtype=torch.float32)
-            y_valid_tensor = torch.tensor(y_valid, dtype=torch.float32)
-            if y_valid_tensor.ndim == 1:
-                y_valid_tensor = y_valid_tensor.unsqueeze(1)
-        return train_loader, X_valid_tensor, y_valid_tensor
-
-    def fit(self, X, y, **kwargs):
-        ## Check the parameters
-        self.size_input = X.shape[1]
-        y = np.squeeze(np.array(y))
-        self.size_output = 1
-        self.task = "regression"
-        if y.ndim == 2:
-            self.task = "multi_regression"
-            self.size_output = y.shape[1]
-
-        ## Process data
-        data = self.process_data(X, y, **kwargs)
-
-        ## Build model
-        self.build_model()
-
-        ## Fit the data
-        self._fit(data, **kwargs)
-
-        return self
-
-    def predict(self, X):
-        X_tensor = torch.tensor(X, dtype=torch.float32)
-        self.model.eval()
-        with torch.no_grad():
-            predicted = self.model(X_tensor)
-        return predicted.numpy()
-
-    def score(self, X, y):
-        y_pred = self.predict(X)
-        return r2_score(y, y_pred)
+            # Return to training mode for next epoch
+            self.network.train()
 
 
 class BaseMhaMlp(BaseMlp):
+    """
+    Base class for Metaheuristic-based MLP models that inherit from BaseMlp.
+
+    Attributes
+    ----------
+    SUPPORTED_OPTIMIZERS : list
+        List of supported optimizer names.
+    SUPPORTED_CLS_OBJECTIVES : dict
+        Supported objectives for classification tasks.
+    SUPPORTED_REG_OBJECTIVES : dict
+        Supported objectives for regression tasks.
+    SUPPORTED_CLS_METRICS : dict
+        Supported metrics for classification evaluation.
+    SUPPORTED_REG_METRICS : dict
+        Supported metrics for regression evaluation.
+
+    Parameters
+    ----------
+    hidden_layers : tuple of int
+        The number of neurons in each hidden layer.
+    act_names : str
+        The name of the activation function to be used.
+    dropout_rates : float
+        The dropout rate for regularization.
+    act_output : any, optional
+        Activation function for output layer (default is None).
+    optim : str
+        Name of the optimization algorithm to be used.
+    optim_paras : dict, optional
+        Parameters for the optimizer (default is None).
+    obj_name : str, optional
+        Objective name for the model evaluation (default is None).
+    seed : int
+        Random seed for reproducibility (default is 42).
+    verbose : bool
+        Whether to print verbose output during training (default is True).
+
+    Methods
+    -------
+    __init__(hidden_layers, act_names, dropout_rates, act_output, optim, optim_paras, obj_name, seed, verbose):
+        Initializes the model parameters and configuration.
+
+    _set_optimizer(optim, optim_paras):
+        Sets the optimizer based on the provided name or instance.
+
+    build_model():
+        Builds the model architecture and sets the optimizer and loss function.
+
+    _set_lb_ub(lb, ub, n_dims):
+        Validates and sets the lower and upper bounds for optimization.
+
+    objective_function(solution):
+        Evaluates the fitness function for the given solution.
+
+    _fit(data, lb, ub, mode, n_workers, termination, save_population, **kwargs):
+        Fits the model to the provided data using the optimizer.
+    """
 
     SUPPORTED_OPTIMIZERS = list(get_all_optimizers().keys())
     SUPPORTED_CLS_OBJECTIVES = get_all_classification_metrics()
     SUPPORTED_REG_OBJECTIVES = get_all_regression_metrics()
-    SUPPORTED_CLS_METRICS = get_all_classification_metrics()
-    SUPPORTED_REG_METRICS = get_all_regression_metrics()
-    SUPPORTED_ACTIVATIONS = ["none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu",
-                             "tanh", "hard_tanh", "sigmoid", "hard_sigmoid", "log_sigmoid", "swish",
-                             "hard_swish", "soft_plus", "mish", "soft_sign", "tanh_shrink", "soft_shrink",
-                             "hard_shrink", "softmin", "softmax", "log_softmax", "silu"]
-    CLS_OBJ_LOSSES = None
 
-    def __init__(self, hidden_layers=(100, ), act_names="ELU", dropout_rates=0.2, act_output=None,
-                 optim="BaseGA", optim_paras=None,
-                 early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
-                 seed=42, verbose=True):
+    def __init__(self, hidden_layers=(100,), act_names="ELU", dropout_rates=0.2, act_output=None,
+                 optim="BaseGA", optim_paras=None, obj_name=None, seed=42, verbose=True):
+        """
+        Initializes the BaseMhaMlp class.
+        """
         super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output)
         self.optim = optim
         self.optim_paras = optim_paras
-        if optim_paras is None:
-            self.optim_paras = {}
-        self.early_stopping = early_stopping
-        self.n_patience = n_patience
-        self.epsilon = epsilon
-        self.valid_rate = valid_rate
         self.seed = seed
         self.verbose = verbose
 
+        # Initialize model parameters
         self.size_input = None
         self.size_output = None
-        self.model = None
+        self.network = None
         self.optimizer = None
-        self.criterion = None
-        self.patience_count = None
-        self.valid_mode = False
-        self.early_stopper = None
+        self.obj_name = obj_name
+        self.metric_class = None
 
     def _set_optimizer(self, optim=None, optim_paras=None):
-        if type(optim) is str:
+        """
+        Sets the optimizer based on the provided optimizer name or instance.
+
+        Parameters
+        ----------
+        optim : str or Optimizer
+            The optimizer name or instance to be set.
+        optim_paras : dict, optional
+            Parameters to configure the optimizer.
+
+        Returns
+        -------
+        Optimizer
+            An instance of the selected optimizer.
+
+        Raises
+        ------
+        TypeError
+            If the provided optimizer is neither a string nor an instance of Optimizer.
+        """
+        if isinstance(optim, str):
             opt_class = get_optimizer_by_name(optim)
-            if type(optim_paras) is dict:
+            if isinstance(optim_paras, dict):
                 return opt_class(**optim_paras)
             else:
-                return opt_class(epoch=100, pop_size=50)
+                return opt_class(epoch=300, pop_size=30)
         elif isinstance(optim, Optimizer):
-            if type(optim_paras) is dict:
+            if isinstance(optim_paras, dict):
                 return optim.set_parameters(optim_paras)
             return optim
         else:
             raise TypeError(f"optimizer needs to set as a string and supported by Mealpy library.")
 
     def build_model(self):
-        if self.early_stopping:
-            self.early_stopper = EarlyStopper(patience=self.n_patience, epsilon=self.epsilon)
+        """
+        Builds the model architecture and sets the optimizer and loss function based on the task.
 
-        self.model = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
+        Raises
+        ------
+        ValueError
+            If the task is not recognized.
+        """
+        self.network = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
                                self.dropout_rates, self.task, self.act_output)
-
-
 
         self.optimizer = self._set_optimizer(self.optim, self.optim_paras)
 
@@ -494,131 +799,131 @@ class BaseMhaMlp(BaseMlp):
             self.criterion = nn.CrossEntropyLoss()
         elif self.task == "binary_classification":
             self.criterion = nn.BCEWithLogitsLoss()
-        else:       # regression or multi_regression
+        else:  # regression or multi_regression
             self.criterion = nn.MSELoss()
 
-    def process_data(self, X, y, **kwargs):
-        pass
+    def _set_lb_ub(self, lb=None, ub=None, n_dims=None):
+        """
+        Validates and sets the lower and upper bounds for optimization.
 
-    def _fit(self, data, **kwargs):
-        # Get data
-        train_loader, X_valid_tensor, y_valid_tensor = data
+        Parameters
+        ----------
+        lb : list, tuple, np.ndarray, int, or float, optional
+            The lower bounds.
+        ub : list, tuple, np.ndarray, int, or float, optional
+            The upper bounds.
+        n_dims : int
+            The number of dimensions.
 
-        # Training loop
-        self.model.train()  # Set model to training mode
-        for epoch in range(self.epochs):
+        Returns
+        -------
+        tuple
+            A tuple containing validated lower and upper bounds.
 
-            # Training step
-            total_loss = 0.0
-            for batch_X, batch_y in train_loader:
-                self.optimizer.zero_grad()  # Clear gradients
-
-                # Forward pass
-                output = self.model(batch_X)
-                # Compute loss based on classification type
-                loss = self.criterion(output, batch_y)
-
-                # Backward pass and optimizer step
-                loss.backward()
-                self.optimizer.step()
-
-                total_loss += loss.item()  # Accumulate batch loss
-
-            # Average loss per epoch
-            avg_loss = total_loss / len(train_loader)
-
-            # Validation step
-            if self.valid_mode:
-                self.model.eval()
-                with torch.no_grad():
-                    val_output = self.model(X_valid_tensor)
-                    val_loss = self.criterion(val_output, y_valid_tensor)
-
-                if self.early_stopping:
-                    if self.early_stopper.early_stop(val_loss):
-                        print(f"Early stopping at epoch {epoch + 1}")
-                        break
-                print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}, Validation Loss: {val_loss:.4f}")
+        Raises
+        ------
+        ValueError
+            If the bounds are not valid.
+        """
+        if isinstance(lb, (list, tuple, np.ndarray)) and isinstance(ub, (list, tuple, np.ndarray)):
+            if len(lb) == len(ub):
+                if len(lb) == 1:
+                    lb = np.array(lb * n_dims, dtype=float)
+                    ub = np.array(ub * n_dims, dtype=float)
+                    return lb, ub
+                elif len(lb) == n_dims:
+                    return lb, ub
+                else:
+                    raise ValueError(f"Invalid lb and ub. Their length should be equal to 1 or {n_dims}.")
             else:
-                if self.early_stopping:
-                    if self.early_stopper.early_stop(avg_loss):
-                        print(f"Early stopping at epoch {epoch + 1}")
-                        break
-                print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}")
-
-            # Set back to training mode
-            self.model.train()
-
-
-class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
-    def __init__(self, hidden_layers=(100, ), act_names="ReLU", dropout_rates=0.2, act_output=None,
-                 optim="Adam", optim_paras=None,
-                 early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
-                 seed=42, verbose=True):
-        super().__init__(hidden_layers, act_names, dropout_rates, act_output, optim, optim_paras,
-                         early_stopping, n_patience, epsilon, valid_rate, seed, verbose)
-        self.classes_ = None
-
-    def process_data(self, X, y, **kwargs):
-        X_valid_tensor, y_valid_tensor = None, None
-        # Convert data to tensors and create a DataLoader for batch processing
-        if self.valid_rate is not None:
-            if 0 < self.valid_rate < 1:
-                # Split data into training and validation sets
-                self.valid_mode = True
-                X, X_valid, y, y_valid = train_test_split(X, y, test_size=self.valid_rate,
-                                                          random_state=self.seed, shuffle=True, stratify=y)
-            else:
-                raise ValueError("Validation rate must be between 0 and 1.")
-        X_tensor = torch.tensor(X, dtype=torch.float32)
-        y_tensor = torch.tensor(y, dtype=torch.long)
-        if self.task == "binary_classification":
-            y_tensor = torch.tensor(y, dtype=torch.float32)
-            y_tensor = torch.unsqueeze(y_tensor, 1)
-        train_loader = DataLoader(TensorDataset(X_tensor, y_tensor), batch_size=self.batch_size, shuffle=True)
-
-        if self.valid_mode:
-            X_valid_tensor = torch.tensor(X_valid, dtype=torch.float32)
-            y_valid_tensor = torch.tensor(y_valid, dtype=torch.long)
-            if self.task == "binary_classification":
-                y_valid_tensor = torch.tensor(y_valid, dtype=torch.float32)
-                y_valid_tensor = torch.unsqueeze(y_valid_tensor, 1)
-        return train_loader, X_valid_tensor, y_valid_tensor
-
-    def fit(self, X, y, **kwargs):
-        ## Check the parameters
-        self.size_input = X.shape[1]
-        y = np.squeeze(np.array(y))
-        if y.ndim != 1:
-            y = np.argmax(y, axis=1)
-        self.classes_ = np.unique(y)
-        if len(self.classes_) == 2:
-            self.task = "binary_classification"
-            self.size_output = 1
+                raise ValueError(f"Invalid lb and ub. They should have the same length.")
+        elif isinstance(lb, (int, float)) and isinstance(ub, (int, float)):
+            lb = (float(lb),) * n_dims
+            ub = (float(ub),) * n_dims
+            return lb, ub
         else:
-            self.task = "classification"
-            self.size_output = len(self.classes_)
+            raise ValueError(f"Invalid lb and ub. They should be a number of list/tuple/np.ndarray with size equal to {n_dims}")
 
-        ## Process data
-        data = self.process_data(X, y, **kwargs)
+    def objective_function(self, solution=None):
+        """
+        Evaluates the fitness function for classification metrics based on the provided solution.
 
-        ## Build model
-        self.build_model()
+        Parameters
+        ----------
+        solution : np.ndarray, default=None
+            The proposed solution to evaluate.
 
-        ## Fit the data
-        self._fit(data, **kwargs)
+        Returns
+        -------
+        result : float
+            The fitness value, representing the loss for the current solution.
+        """
+        X_train, y_train = self.data
+        self.network.set_weights(solution)
+        y_pred = self.network(X_train).detach().cpu().numpy()
+        loss_train = self.metric_class(y_train, y_pred).get_metric_by_name(self.obj_name)[self.obj_name]
+        return np.mean([loss_train])
 
+    def _fit(self, data, lb=(-1.0,), ub=(1.0,), mode='single', n_workers=None,
+             termination=None, save_population=False, **kwargs):
+        """
+        Fits the model to the provided data using the specified optimizer.
+
+        Parameters
+        ----------
+        data : tuple
+            Training data consisting of features and labels.
+        lb : tuple, optional
+            Lower bounds for the optimization (default is (-1.0,)).
+        ub : tuple, optional
+            Upper bounds for the optimization (default is (1.0,)).
+        mode : str, optional
+            Mode for optimization (default is 'single').
+        n_workers : int, optional
+            Number of workers for parallel processing (default is None).
+        termination : any, optional
+            Termination criteria for optimization (default is None).
+        save_population : bool, optional
+            Whether to save the population during optimization (default is False).
+        **kwargs : additional parameters
+            Additional parameters for the fitting process.
+
+        Returns
+        -------
+        self : BaseMhaMlp
+            The instance of the fitted model.
+
+        Raises
+        ------
+        ValueError
+            If the objective name is None or not supported.
+        """
+        # Get data
+        n_dims = self.network.get_weights_size()
+        lb, ub = self._set_lb_ub(lb, ub, n_dims)
+        self.data = data
+
+        log_to = "console" if self.verbose else "None"
+        if self.obj_name is None:
+            raise ValueError("obj_name can't be None")
+        else:
+            if self.obj_name in self.SUPPORTED_REG_OBJECTIVES.keys():
+                minmax = self.SUPPORTED_REG_OBJECTIVES[self.obj_name]
+            elif self.obj_name in self.SUPPORTED_CLS_OBJECTIVES.keys():
+                minmax = self.SUPPORTED_CLS_OBJECTIVES[self.obj_name]
+            else:
+                raise ValueError("obj_name is not supported. Please check the library: permetrics to see the supported objective function.")
+        problem = {
+            "obj_func": self.objective_function,
+            "bounds": FloatVar(lb=lb, ub=ub),
+            "minmax": minmax,
+            "log_to": log_to,
+            "save_population": save_population,
+        }
+        if termination is None:
+            self.optimizer.solve(problem, mode=mode, n_workers=n_workers, seed=self.seed)
+        else:
+            self.optimizer.solve(problem, mode=mode, n_workers=n_workers, termination=termination, seed=self.seed)
+        self.network.set_weights(self.optimizer.g_best.solution)
+        self.loss_train = np.array(self.optimizer.history.list_global_best_fit)
         return self
-
-    def predict(self, X):
-        X_tensor = torch.tensor(X, dtype=torch.float32)
-        self.model.eval()
-        with torch.no_grad():
-            output = self.model(X_tensor)
-            _, predicted = torch.max(output, 1)
-        return predicted.numpy()
-
-    def score(self, X, y):
-        y_pred = self.predict(X)
-        return accuracy_score(y, y_pred)
-

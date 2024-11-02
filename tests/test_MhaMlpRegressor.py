@@ -16,8 +16,8 @@ def test_MhaMlpRegressor_class():
     y = 2 * X + 1 + noise
 
     opt_paras = {"name": "GA", "epoch": 10, "pop_size": 30}
-    model = MhaMlpRegressor(hidden_size=50, act1_name="tanh", act2_name="sigmoid",
-                            obj_name="MSE", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
+    model = MhaMlpRegressor(hidden_layers=(30, 15,), act_names="ELU", dropout_rates=0.2, act_output=None,
+                            optim="BaseGA", optim_paras=opt_paras, obj_name="MSE", seed=42, verbose=True)
     model.fit(X, y)
 
     pred = model.predict(X)

@@ -4,9 +4,7 @@
 #       Github: https://github.com/thieu1995        %                         
 # --------------------------------------------------%
 
-import pandas as pd
 import numpy as np
-from pathlib import Path
 from metaperceptron.helpers.scaler_util import DataTransformer
 from sklearn.model_selection import train_test_split
 
@@ -230,46 +228,3 @@ class Data:
         self.X_test = X_test
         self.y_test = y_test
         return self
-
-
-def get_dataset(dataset_name):
-    """
-    Helper function to retrieve the data
-
-    Parameters
-    ----------
-    dataset_name : str
-        Name of the dataset
-
-    Returns
-    -------
-    data: Data
-        The instance of Data class, that hold X and y variables.
-    """
-    dir_root = f"{Path(__file__).parent.parent.__str__()}/data"
-    list_path_reg = Path(f"{dir_root}/reg").glob("*.csv")
-    list_path_cls = Path(f"{dir_root}/cls").glob("*.csv")
-    reg_list = [pf.name[:-4] for pf in list_path_reg]
-    cls_list = [pf.name[:-4] for pf in list_path_cls]
-    list_datasets = reg_list + cls_list
-
-    if dataset_name not in list_datasets:
-        print(f"EvoRBF currently does not have '{dataset_name}' data in its database....")
-        display = input("Enter 1 to see the available datasets: ") or 0
-        if display:
-            print("+ For classification problem. We support datasets:")
-            for idx, dataset in enumerate(cls_list):
-                print(f"\t{idx + 1}: {dataset}")
-            print("+ For regression problem. We support datasets:")
-            for idx, dataset in enumerate(reg_list):
-                print(f"\t{idx + 1}: {dataset}")
-    else:
-        if dataset_name in reg_list:
-            df = pd.read_csv(f"{dir_root}/reg/{dataset_name}.csv", header=None)
-            data_type = "REGRESSION"
-        else:
-            df = pd.read_csv(f"{dir_root}/cls/{dataset_name}.csv", header=None)
-            data_type = "CLASSIFICATION"
-        data = Data(np.array(df.iloc[:, 0:-1]), np.array(df.iloc[:, -1]))
-        print(f"Requested {data_type} dataset: {dataset_name} found and loaded!")
-        return data

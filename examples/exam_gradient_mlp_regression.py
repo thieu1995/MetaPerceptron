@@ -26,9 +26,10 @@ data.y_test = scaler_y.transform(data.y_test)
 print(type(data.X_train), type(data.y_train))
 
 ## Create model
-model = MlpRegressor(hidden_size=25, act1_name="tanh", act2_name="sigmoid", obj_name="MSE",
-                      max_epochs=10, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=True)
-
+model = MlpRegressor(hidden_layers=(30,), act_names="Tanh", dropout_rates=None, act_output=None,
+                    epochs=10, batch_size=16, optim="Adam", optim_paras=None,
+                    early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
+                    seed=42, verbose=True)
 ## Train the model
 model.fit(data.X_train, data.y_train)
 
@@ -37,6 +38,4 @@ y_pred = model.predict(data.X_test)
 print(y_pred)
 
 ## Calculate some metrics
-print(model.score(X=data.X_test, y=data.y_test, method="RMSE"))
-print(model.scores(X=data.X_test, y=data.y_test, list_methods=["R2", "NSE", "MAPE"]))
 print(model.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["R2", "NSE", "MAPE", "NNSE"]))
