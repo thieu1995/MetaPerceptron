@@ -15,8 +15,8 @@ def test_MhaMlpClassifier_class():
     y = np.random.randint(0, 2, size=100)
 
     opt_paras = {"name": "GA", "epoch": 10, "pop_size": 30}
-    model = MhaMlpClassifier(hidden_size=50, act1_name="tanh", act2_name="sigmoid",
-                             obj_name="CEL", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
+    model = MhaMlpClassifier(hidden_layers=(100,), act_names="ELU", dropout_rates=None, act_output=None,
+                             optim="BaseGA", optim_paras=opt_paras, obj_name="F1S", seed=42, verbose=True)
     model.fit(X, y)
     pred = model.predict(X)
     assert MhaMlpClassifier.SUPPORTED_CLS_OBJECTIVES == model.SUPPORTED_CLS_OBJECTIVES
