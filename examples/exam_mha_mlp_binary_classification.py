@@ -26,17 +26,15 @@ data.y_test = scaler_y.transform(data.y_test)
 ## Create model
 opt_paras = {"name": "WOA", "epoch": 100, "pop_size": 30}
 print(MhaMlpClassifier.SUPPORTED_CLS_OBJECTIVES)
-model = MhaMlpClassifier(hidden_size=50, act1_name="tanh", act2_name="sigmoid",
-                 obj_name="NPV", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
 
+model = MhaMlpClassifier(hidden_layers=(100,), act_names="ELU", dropout_rates=None, act_output=None,
+                       optim="BaseGA", optim_paras=opt_paras, obj_name="F1S", seed=42, verbose=True)
 ## Train the model
 model.fit(X=data.X_train, y=data.y_train)
 
 ## Test the model
-y_pred = model.predict(data.X_test, return_prob=True)
+y_pred = model.predict(data.X_test)
 print(y_pred)
 
 ## Calculate some metrics
-print(model.score(X=data.X_test, y=data.y_test, method="AS"))
-print(model.scores(X=data.X_test, y=data.y_test, list_methods=["PS", "RS", "NPV", "F1S", "F2S"]))
-print(model.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["F2S", "CKS", "FBS"]))
+print(model.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["AS", "F1S", "PS", "FBS"]))
