@@ -656,3 +656,268 @@ class BaseStandardMlp(BaseMlp):
             # Return to training mode for next epoch
             self.model.train()
 
+
+class BaseMhaMlp(BaseMlp):
+    """
+    Base class for Metaheuristic-based MLP models that inherit from BaseMlp.
+
+    Attributes
+    ----------
+    SUPPORTED_OPTIMIZERS : list
+        List of supported optimizer names.
+    SUPPORTED_CLS_OBJECTIVES : dict
+        Supported objectives for classification tasks.
+    SUPPORTED_REG_OBJECTIVES : dict
+        Supported objectives for regression tasks.
+    SUPPORTED_CLS_METRICS : dict
+        Supported metrics for classification evaluation.
+    SUPPORTED_REG_METRICS : dict
+        Supported metrics for regression evaluation.
+
+    Parameters
+    ----------
+    hidden_layers : tuple of int
+        The number of neurons in each hidden layer.
+    act_names : str
+        The name of the activation function to be used.
+    dropout_rates : float
+        The dropout rate for regularization.
+    act_output : any, optional
+        Activation function for output layer (default is None).
+    optim : str
+        Name of the optimization algorithm to be used.
+    optim_paras : dict, optional
+        Parameters for the optimizer (default is None).
+    obj_name : str, optional
+        Objective name for the model evaluation (default is None).
+    seed : int
+        Random seed for reproducibility (default is 42).
+    verbose : bool
+        Whether to print verbose output during training (default is True).
+
+    Methods
+    -------
+    __init__(hidden_layers, act_names, dropout_rates, act_output, optim, optim_paras, obj_name, seed, verbose):
+        Initializes the model parameters and configuration.
+
+    _set_optimizer(optim, optim_paras):
+        Sets the optimizer based on the provided name or instance.
+
+    build_model():
+        Builds the model architecture and sets the optimizer and loss function.
+
+    _set_lb_ub(lb, ub, n_dims):
+        Validates and sets the lower and upper bounds for optimization.
+
+    objective_function(solution):
+        Evaluates the fitness function for the given solution.
+
+    _fit(data, lb, ub, mode, n_workers, termination, save_population, **kwargs):
+        Fits the model to the provided data using the optimizer.
+    """
+
+    SUPPORTED_OPTIMIZERS = list(get_all_optimizers().keys())
+    SUPPORTED_CLS_OBJECTIVES = get_all_classification_metrics()
+    SUPPORTED_REG_OBJECTIVES = get_all_regression_metrics()
+    SUPPORTED_CLS_METRICS = get_all_classification_metrics()
+    SUPPORTED_REG_METRICS = get_all_regression_metrics()
+
+    def __init__(self, hidden_layers=(100,), act_names="ELU", dropout_rates=0.2, act_output=None,
+                 optim="BaseGA", optim_paras=None, obj_name=None, seed=42, verbose=True):
+        """
+        Initializes the BaseMhaMlp class.
+        """
+        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output)
+        self.optim = optim
+        self.optim_paras = optim_paras
+        self.seed = seed
+        self.verbose = verbose
+
+        # Initialize model parameters
+        self.size_input = None
+        self.size_output = None
+        self.model = None
+        self.optimizer = None
+        self.obj_name = obj_name
+        self.metric_class = None
+
+    def _set_optimizer(self, optim=None, optim_paras=None):
+        """
+        Sets the optimizer based on the provided optimizer name or instance.
+
+        Parameters
+        ----------
+        optim : str or Optimizer
+            The optimizer name or instance to be set.
+        optim_paras : dict, optional
+            Parameters to configure the optimizer.
+
+        Returns
+        -------
+        Optimizer
+            An instance of the selected optimizer.
+
+        Raises
+        ------
+        TypeError
+            If the provided optimizer is neither a string nor an instance of Optimizer.
+        """
+        if isinstance(optim, str):
+            opt_class = get_optimizer_by_name(optim)
+            if isinstance(optim_paras, dict):
+                return opt_class(**optim_paras)
+            else:
+                return opt_class(epoch=300, pop_size=30)
+        elif isinstance(optim, Optimizer):
+            if isinstance(optim_paras, dict):
+                return optim.set_parameters(optim_paras)
+            return optim
+        else:
+            raise TypeError(f"optimizer needs to set as a string and supported by Mealpy library.")
+
+    def build_model(self):
+        """
+        Builds the model architecture and sets the optimizer and loss function based on the task.
+
+        Raises
+        ------
+        ValueError
+            If the task is not recognized.
+        """
+        self.model = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
+                               self.dropout_rates, self.task, self.act_output)
+
+        self.optimizer = self._set_optimizer(self.optim, self.optim_paras)
+
+        if self.task == "classification":
+            self.criterion = nn.CrossEntropyLoss()
+        elif self.task == "binary_classification":
+            self.criterion = nn.BCEWithLogitsLoss()
+        else:  # regression or multi_regression
+            self.criterion = nn.MSELoss()
+
+    def _set_lb_ub(self, lb=None, ub=None, n_dims=None):
+        """
+        Validates and sets the lower and upper bounds for optimization.
+
+        Parameters
+        ----------
+        lb : list, tuple, np.ndarray, int, or float, optional
+            The lower bounds.
+        ub : list, tuple, np.ndarray, int, or float, optional
+            The upper bounds.
+        n_dims : int
+            The number of dimensions.
+
+        Returns
+        -------
+        tuple
+            A tuple containing validated lower and upper bounds.
+
+        Raises
+        ------
+        ValueError
+            If the bounds are not valid.
+        """
+        if isinstance(lb, (list, tuple, np.ndarray)) and isinstance(ub, (list, tuple, np.ndarray)):
+            if len(lb) == len(ub):
+                if len(lb) == 1:
+                    lb = np.array(lb * n_dims, dtype=float)
+                    ub = np.array(ub * n_dims, dtype=float)
+                    return lb, ub
+                elif len(lb) == n_dims:
+                    return lb, ub
+                else:
+                    raise ValueError(f"Invalid lb and ub. Their length should be equal to 1 or {n_dims}.")
+            else:
+                raise ValueError(f"Invalid lb and ub. They should have the same length.")
+        elif isinstance(lb, (int, float)) and isinstance(ub, (int, float)):
+            lb = (float(lb),) * n_dims
+            ub = (float(ub),) * n_dims
+            return lb, ub
+        else:
+            raise ValueError(f"Invalid lb and ub. They should be a number of list/tuple/np.ndarray with size equal to {n_dims}")
+
+    def objective_function(self, solution=None):
+        """
+        Evaluates the fitness function for classification metrics based on the provided solution.
+
+        Parameters
+        ----------
+        solution : np.ndarray, default=None
+            The proposed solution to evaluate.
+
+        Returns
+        -------
+        result : float
+            The fitness value, representing the loss for the current solution.
+        """
+        X_train, y_train = self.data
+        self.model.set_weights(solution)
+        y_pred = self.model(X_train).detach().cpu().numpy()
+        loss_train = self.metric_class(y_train, y_pred).get_metric_by_name(self.obj_name)[self.obj_name]
+        return np.mean([loss_train])
+
+    def _fit(self, data, lb=(-1.0,), ub=(1.0,), mode='single', n_workers=None,
+             termination=None, save_population=False, **kwargs):
+        """
+        Fits the model to the provided data using the specified optimizer.
+
+        Parameters
+        ----------
+        data : tuple
+            Training data consisting of features and labels.
+        lb : tuple, optional
+            Lower bounds for the optimization (default is (-1.0,)).
+        ub : tuple, optional
+            Upper bounds for the optimization (default is (1.0,)).
+        mode : str, optional
+            Mode for optimization (default is 'single').
+        n_workers : int, optional
+            Number of workers for parallel processing (default is None).
+        termination : any, optional
+            Termination criteria for optimization (default is None).
+        save_population : bool, optional
+            Whether to save the population during optimization (default is False).
+        **kwargs : additional parameters
+            Additional parameters for the fitting process.
+
+        Returns
+        -------
+        self : BaseMhaMlp
+            The instance of the fitted model.
+
+        Raises
+        ------
+        ValueError
+            If the objective name is None or not supported.
+        """
+        # Get data
+        n_dims = self.model.get_weights_size()
+        lb, ub = self._set_lb_ub(lb, ub, n_dims)
+        self.data = data
+
+        log_to = "console" if self.verbose else "None"
+        if self.obj_name is None:
+            raise ValueError("obj_name can't be None")
+        else:
+            if self.obj_name in self.SUPPORTED_REG_OBJECTIVES.keys():
+                minmax = self.SUPPORTED_REG_OBJECTIVES[self.obj_name]
+            elif self.obj_name in self.SUPPORTED_CLS_OBJECTIVES.keys():
+                minmax = self.SUPPORTED_CLS_OBJECTIVES[self.obj_name]
+            else:
+                raise ValueError("obj_name is not supported. Please check the library: permetrics to see the supported objective function.")
+        problem = {
+            "obj_func": self.objective_function,
+            "bounds": FloatVar(lb=lb, ub=ub),
+            "minmax": minmax,
+            "log_to": log_to,
+            "save_population": save_population,
+        }
+        if termination is None:
+            self.optimizer.solve(problem, mode=mode, n_workers=n_workers, seed=self.seed)
+        else:
+            self.optimizer.solve(problem, mode=mode, n_workers=n_workers, termination=termination, seed=self.seed)
+        self.model.set_weights(self.optimizer.g_best.solution)
+        self.loss_train = np.array(self.optimizer.history.list_global_best_fit)
+        return self
