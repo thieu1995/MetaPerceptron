@@ -4,425 +4,257 @@
 #       Github: https://github.com/thieu1995        %                         
 # --------------------------------------------------%
 
-from typing import Tuple
+from typing import TypeVar
 import numpy as np
 import torch
-from sklearn.preprocessing import OneHotEncoder
-from skorch import NeuralNetRegressor, NeuralNetClassifier
-from metaperceptron.core.base_mlp_torch import BaseMlpTorch, MlpTorch
-from metaperceptron.helpers.scaler_util import ObjectiveScaler
+import torch.nn as nn
+from permetrics import ClassificationMetric, RegressionMetric
+from torch.utils.data import TensorDataset, DataLoader
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, r2_score
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
+from metaperceptron.helpers.metric_util import get_all_regression_metrics, get_all_classification_metrics
+from mealpy import get_optimizer_by_name, Optimizer, get_all_optimizers, FloatVar
+import pickle
+import pandas as pd
+from pathlib import Path
+from metaperceptron.helpers import validator
+from metaperceptron.core.base_mlp import BaseStandardMlp
 
 
-class MlpRegressor(BaseMlpTorch):
+class MlpClassifier(BaseStandardMlp, ClassifierMixin):
     """
-    Defines the class for traditional MLP network for Regression problems that inherit the BaseMlpTorch and RegressorMixin classes.
+    Multi-layer Perceptron (MLP) Classifier that inherits from BaseStandardMlp and ClassifierMixin.
 
     Parameters
     ----------
-    hidden_size : int, default=50
-        The hidden size of MLP network (This network only has single hidden layer).
+    hidden_layers : tuple, default=(100,)
+        Defines the number of hidden layers and the units per layer in the network.
 
-    act1_name : str, defeault="tanh"
-        This is activation for hidden layer. The supported activation are: {"none", "relu",
-        "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
-        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus",
-        "mish", "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
+    act_names : str or list of str, default="ReLU"
+        Activation function(s) for each layer. Can be a single activation name for all layers or a list of names.
 
-    act2_name : str, defeault="sigmoid"
-        This is activation for output layer. The supported activation are:
-        {"none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
-        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus", "mish",
-        "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
+    dropout_rates : float or list of float, default=0.2
+        Dropout rates for each hidden layer to prevent overfitting. If a single float, the same rate is applied to all layers.
 
-    obj_name : str, default="MSE"
-        The name of loss function for the network.
+    act_output : str, default=None
+        Activation function for the output layer.
 
-    max_epochs : int, default=1000
-        Maximum number of epochs / iterations / generations
+    epochs : int, default=1000
+        Number of training epochs.
 
-    batch_size : int, default=32
-        The batch size
+    batch_size : int, default=16
+        Batch size used in training.
 
-    optimizer : str, default = "SGD"
-        The gradient-based optimizer from Pytorch. List of supported optimizer is:
-        ["Adadelta", "Adagrad", "Adam", "Adamax", "AdamW", "ASGD", "LBFGS", "NAdam", "RAdam", "RMSprop", "Rprop", "SGD"]
+    optim : str, default="Adam"
+        Optimizer to use, selected from the supported optimizers.
 
-    optimizer_paras : dict or None, default=None
-        The dictionary parameters of the selected optimizer.
+    optim_paras : dict, default=None
+        Parameters for the optimizer, such as learning rate, beta values, etc.
 
-    verbose : bool, default=True
-        Whether to print progress messages to stdout.
+    early_stopping : bool, default=True
+        If True, training will stop early if validation loss does not improve.
 
-    Examples
-    --------
-    >>> from metaperceptron import MlpRegressor, Data
-    >>> from sklearn.datasets import make_regression
-    >>>
-    >>> ## Make dataset
-    >>> X, y = make_regression(n_samples=200, n_features=10, random_state=1)
-    >>> ## Load data object
-    >>> data = Data(X, y)
-    >>> ## Split train and test
-    >>> data.split_train_test(test_size=0.2, random_state=1, inplace=True)
-    >>> ## Scale dataset
-    >>> data.X_train, scaler = data.scale(data.X_train, scaling_methods=("minmax"))
-    >>> data.X_test = scaler.transform(data.X_test)
-    >>> ## Create model
-    >>> model = MlpRegressor(hidden_size=25, act1_name="tanh", act2_name="sigmoid", obj_name="MSE",
-    >>>             max_epochs=10, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=True)
-    >>> ## Train the model
-    >>> model.fit(data.X_train, data.y_train)
-    >>> ## Test the model
-    >>> y_pred = model.predict(data.X_test)
-    >>> ## Calculate some metrics
-    >>> print(model.score(X=data.X_test, y=data.y_test, method="RMSE"))
-    >>> print(model.scores(X=data.X_test, y=data.y_test, list_methods=["R2", "NSE", "MAPE"]))
-    >>> print(model.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["R2", "NSE", "MAPE", "NNSE"]))
-    """
+    n_patience : int, default=10
+        Number of epochs to wait for an improvement in validation loss before stopping.
 
-    SUPPORTED_LOSSES = {
-        "MAE": torch.nn.L1Loss, "MSE": torch.nn.MSELoss
-    }
+    epsilon : float, default=0.001
+        Minimum improvement in validation loss to continue training.
 
-    def __init__(self, hidden_size=50, act1_name="tanh", act2_name="sigmoid", obj_name="MSE",
-                 max_epochs=1000, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=False, **kwargs):
-        super().__init__(hidden_size=hidden_size, act1_name=act1_name, act2_name=act2_name, obj_name=obj_name,
-                 max_epochs=max_epochs, batch_size=batch_size, optimizer=optimizer, optimizer_paras=optimizer_paras, verbose=verbose)
-        self.kwargs = kwargs
+    valid_rate : float, default=0.1
+        Fraction of data to use for validation.
 
-    def create_network(self, X, y):
-        """
-        Returns
-        -------
-            network: MLP, an instance of MLP network
-            obj_scaler: ObjectiveScaler, the objective scaler that used to scale output
-        """
-        if type(y) in (list, tuple, np.ndarray):
-            y = np.squeeze(np.asarray(y))
-            if y.ndim == 1:
-                size_output = 1
-            elif y.ndim == 2:
-                size_output = y.shape[1]
-            else:
-                raise TypeError("Invalid y array shape, it should be 1D vector or 2D matrix.")
-        else:
-            raise TypeError("Invalid y array type, it should be list, tuple or np.ndarray")
-        obj_scaler = ObjectiveScaler(obj_name="self", ohe_scaler=None)
-        verbose = 1 if self.verbose else 0
-        network = NeuralNetRegressor(
-            module=MlpTorch,
-            module__input_size=X.shape[1],
-            module__output_size=size_output,
-            module__hidden_size=self.hidden_size,
-            module__act1_name=self.act1_name,
-            module__act2_name=self.act2_name,
-            criterion=self.SUPPORTED_LOSSES[self.obj_name],
-            max_epochs=self.max_epochs,
-            batch_size=self.batch_size,
-            optimizer=getattr(torch.optim, self.optimizer),
-            verbose=verbose,
-            **self.optimizer_paras, **self.kwargs
-        )
-        return network, obj_scaler
-
-    def fit(self, X, y):
-        self.network, self.obj_scaler = self.create_network(X, y)
-        y_scaled = self.obj_scaler.transform(y)
-        if y_scaled.ndim == 1:
-            y_scaled = y_scaled.reshape(-1, 1)
-        y_scaled = torch.tensor(y_scaled, dtype=torch.float32)
-        X = torch.tensor(X, dtype=torch.float32)
-        self.network.fit(X, y=y_scaled)
-        return self
-
-    def score(self, X, y, method="RMSE"):
-        """Return the metric of the prediction.
-
-        Parameters
-        ----------
-        X : array-like of shape (n_samples, n_features)
-            Test samples. For some estimators this may be a precomputed kernel matrix or a list of generic objects instead with shape
-            ``(n_samples, n_samples_fitted)``, where ``n_samples_fitted`` is the number of samples used in the fitting for the estimator.
-
-        y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-            True values for `X`.
-
-        method : str, default="RMSE"
-            You can get all metrics from Permetrics library: https://github.com/thieu1995/permetrics
-
-        Returns
-        -------
-        result : float
-            The result of selected metric
-        """
-        X = torch.tensor(X, dtype=torch.float32)
-        return self._BaseMlpTorch__score_reg(X, y, method)
-
-    def scores(self, X, y, list_methods=("MSE", "MAE")):
-        """Return the list of metrics of the prediction.
-
-        Parameters
-        ----------
-        X : array-like of shape (n_samples, n_features)
-            Test samples. For some estimators this may be a precomputed kernel matrix or a list of generic objects instead with shape
-            ``(n_samples, n_samples_fitted)``, where ``n_samples_fitted`` is the number of samples used in the fitting for the estimator.
-
-        y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-            True values for `X`.
-
-        list_methods : list, default=("MSE", "MAE")
-            You can get all metrics from Permetrics library: https://github.com/thieu1995/permetrics
-
-        Returns
-        -------
-        results : dict
-            The results of the list metrics
-        """
-        X = torch.tensor(X, dtype=torch.float32)
-        return self._BaseMlpTorch__scores_reg(X, y, list_methods)
-
-    def evaluate(self, y_true, y_pred, list_metrics=("MSE", "MAE")):
-        """Return the list of performance metrics of the prediction.
-
-        Parameters
-        ----------
-        y_true : array-like of shape (n_samples,) or (n_samples, n_outputs)
-            True values for `X`.
-
-        y_pred : array-like of shape (n_samples,) or (n_samples, n_outputs)
-            Predicted values for `X`.
-
-        list_metrics : list, default=("MSE", "MAE")
-            You can get metrics from Permetrics library: https://github.com/thieu1995/permetrics
-
-        Returns
-        -------
-        results : dict
-            The results of the list metrics
-        """
-        return self._BaseMlpTorch__evaluate_reg(y_true, y_pred, list_metrics)
-
-
-class MlpClassifier(BaseMlpTorch):
-    """
-    Defines the class for traditional MLP network for Classification problems that inherit the BaseMlpTorch class
-
-    Parameters
-    ----------
-    hidden_size : int, default=50
-        The hidden size of MLP network (This network only has single hidden layer).
-
-    act1_name : str, defeault="tanh"
-        This is activation for hidden layer. The supported activation are: {"none", "relu",
-        "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
-        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus",
-        "mish", "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
-
-    act2_name : str, defeault="sigmoid"
-        This is activation for output layer. The supported activation are:
-        {"none", "relu", "leaky_relu", "celu", "prelu", "gelu", "elu", "selu", "rrelu", "tanh", "hard_tanh",
-        "sigmoid", "hard_sigmoid", "log_sigmoid", "silu", "swish", "hard_swish", "soft_plus", "mish",
-        "soft_sign", "tanh_shrink", "soft_shrink", "hard_shrink", "softmin", "softmax", "log_softmax"}.
-
-    obj_name : str, default="NLLL"
-        The name of objective for classification problem (binary and multi-class classification)
-
-    max_epochs : int, default=1000
-        Maximum number of epochs / iterations / generations
-
-    batch_size : int, default=32
-        The batch size
-
-    optimizer : str, default = "SGD"
-        The gradient-based optimizer from Pytorch. List of supported optimizer is:
-        ["Adadelta", "Adagrad", "Adam", "Adamax", "AdamW", "ASGD", "LBFGS", "NAdam", "RAdam", "RMSprop", "Rprop", "SGD"]
-
-    optimizer_paras : dict or None, default=None
-        The dictionary parameters of the selected optimizer.
+    seed : int, default=42
+        Seed for random number generation.
 
     verbose : bool, default=True
-        Whether to print progress messages to stdout.
-
-    Examples
-    --------
-    >>> from metaperceptron import MlpClassifier, Data
-    >>> from sklearn.datasets import make_regression
-    >>>
-    >>> ## Make dataset
-    >>> X, y = make_regression(n_samples=200, n_features=10, random_state=1)
-    >>> ## Load data object
-    >>> data = Data(X, y)
-    >>> ## Split train and test
-    >>> data.split_train_test(test_size=0.2, random_state=1, inplace=True)
-    >>> ## Scale dataset
-    >>> data.X_train, scaler = data.scale(data.X_train, scaling_methods=("minmax"))
-    >>> data.X_test = scaler.transform(data.X_test)
-    >>> ## Create model
-    >>> model = MlpClassifier(hidden_size=25, act1_name="tanh", act2_name="sigmoid", obj_name="BCEL",
-    >>>                 max_epochs=10, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=True)
-    >>> ## Train the model
-    >>> model.fit(data.X_train, data.y_train)
-    >>> ## Test the model
-    >>> y_pred = model.predict(data.X_test)
-    >>> ## Calculate some metrics
-    >>> print(model.score(X=data.X_test, y=data.y_test, method="RMSE"))
-    >>> print(model.scores(X=data.X_test, y=data.y_test, list_methods=["R2", "NSE", "MAPE"]))
-    >>> print(model.evaluate(y_true=data.y_test, y_pred=y_pred, list_metrics=["R2", "NSE", "MAPE", "NNSE"]))
+        If True, prints training progress and validation loss during training.
     """
 
-    SUPPORTED_LOSSES = {
-        "NLLL": torch.nn.NLLLoss, "PNLLL": torch.nn.PoissonNLLLoss, "GNLLL": torch.nn.GaussianNLLLoss,
-        "KLDL": torch.nn.KLDivLoss,
-        "HEL": torch.nn.HingeEmbeddingLoss, "BCEL": torch.nn.BCELoss, "BCELL": torch.nn.BCEWithLogitsLoss,
-        "CEL": torch.nn.CrossEntropyLoss
-    }
-    CLS_OBJ_LOSSES = ["CEL", "HEL", "KLDL"]
-    CLS_OBJ_BINARY_1 = ["PNLLL", "HEL", "BCEL", "CEL", "BCELL"]
-    CLS_OBJ_BINARY_2 = ["NLLL"]
-    CLS_OBJ_MULTI = ["NLLL", "CEL"]
+    def __init__(self, hidden_layers=(100,), act_names="ReLU", dropout_rates=0.2, act_output=None,
+                 epochs=1000, batch_size=16, optim="Adam", optim_paras=None,
+                 early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
+                 seed=42, verbose=True):
+        # Call superclass initializer with the specified parameters.
+        super().__init__(hidden_layers, act_names, dropout_rates, act_output,
+                         epochs, batch_size, optim, optim_paras,
+                         early_stopping, n_patience, epsilon, valid_rate, seed, verbose)
+        self.classes_ = None
 
-    def __init__(self, hidden_size=50, act1_name="tanh", act2_name="sigmoid", obj_name="NLLL",
-                 max_epochs=1000, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=False, **kwargs):
-        super().__init__(hidden_size=hidden_size, act1_name=act1_name, act2_name=act2_name, obj_name=obj_name,
-                 max_epochs=max_epochs, batch_size=batch_size, optimizer=optimizer, optimizer_paras=optimizer_paras, verbose=verbose)
-        self.kwargs = kwargs
-        self.is_binary = True
-
-    def create_network(self, X, y) -> Tuple[NeuralNetClassifier, ObjectiveScaler]:
+    def process_data(self, X, y, **kwargs):
         """
+        Prepares and processes data for training, including optional splitting into validation data.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Training data.
+
+        y : array-like, shape (n_samples,)
+            Target values.
+
         Returns
         -------
-            network: MLP, an instance of MLP network
-            obj_scaler: ObjectiveScaler, the objective scaler that used to scale output
+        tuple : (train_loader, X_valid_tensor, y_valid_tensor)
+            Data loader for training data, and tensors for validation data (if specified).
         """
-        if type(y) in (list, tuple, np.ndarray):
-            y = np.squeeze(np.asarray(y))
-            if y.ndim != 1:
-                raise TypeError("Invalid y array shape, it should be 1D vector containing labels 0, 1, 2,.. and so on.")
-        else:
-            raise TypeError("Invalid y array type, it should be list, tuple or np.ndarray")
-        self.n_labels = len(np.unique(y))
-        if self.n_labels > 2:
-            self.is_binary = False
-            if self.obj_name in self.CLS_OBJ_LOSSES:
-                self.return_prob = True
-        if self.is_binary:
-            obj_scaler = None
-            if self.obj_name in self.CLS_OBJ_BINARY_1:
-                size_output = 1
-            elif self.obj_name in self.CLS_OBJ_BINARY_2:
-                size_output = 2
-            else:
-                raise ValueError(f"Invalid obj_name. For binary classification problem, obj_name has to be one of {self.CLS_OBJ_BINARY_1 + self.CLS_OBJ_BINARY_2}")
-        else:
-            size_output = self.n_labels
-            if self.obj_name in self.CLS_OBJ_MULTI:
-                ohe_scaler = OneHotEncoder(sparse=False)
-                ohe_scaler.fit(np.reshape(y, (-1, 1)))
-                obj_scaler = ObjectiveScaler(obj_name="softmax", ohe_scaler=ohe_scaler)
-            else:
-                raise ValueError(f"Invalid obj_name. For multi-class classification problem, obj_name has to be one of {self.CLS_OBJ_MULTI}.")
+        X_valid_tensor, y_valid_tensor, X_valid, y_valid  = None, None, None, None
 
-        verbose = 1 if self.verbose else 0
-        network = NeuralNetClassifier(
-            module=MlpTorch,
-            module__input_size=X.shape[1],
-            module__output_size=size_output,
-            module__hidden_size=self.hidden_size,
-            module__act1_name=self.act1_name,
-            module__act2_name=self.act2_name,
-            criterion=self.SUPPORTED_LOSSES[self.obj_name],
-            max_epochs=self.max_epochs,
-            batch_size=self.batch_size,
-            optimizer=getattr(torch.optim, self.optimizer),
-            verbose=verbose,
-            **self.optimizer_paras, **self.kwargs
-        )
-        return network, obj_scaler
+        # Split data into training and validation sets based on valid_rate
+        if self.valid_rate is not None:
+            if 0 < self.valid_rate < 1:
+                # Activate validation mode if valid_rate is set between 0 and 1
+                self.valid_mode = True
+                X, X_valid, y, y_valid = train_test_split(X, y, test_size=self.valid_rate,
+                                                          random_state=self.seed, shuffle=True, stratify=y)
+            else:
+                raise ValueError("Validation rate must be between 0 and 1.")
 
-    def fit(self, X, y):
-        X = X.astype(np.float32)
-        y = y.astype(np.int64)
-        self.network, self.obj_scaler = self.create_network(X, y)
-        if self.is_binary:
-            y = y.astype(np.float32)
-            if self.obj_name in ("NLLL",):
-                y = y.astype(np.int64)
-            if self.obj_name in ("CEL", "BCEL", "BCELL"):
-                y = y.reshape((-1, 1))
+        # Convert data to tensors and set up DataLoader
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        y_tensor = torch.tensor(y, dtype=torch.long)
+        if self.task == "binary_classification":
+            y_tensor = torch.tensor(y, dtype=torch.float32)
+            y_tensor = torch.unsqueeze(y_tensor, 1)
+
+        train_loader = DataLoader(TensorDataset(X_tensor, y_tensor), batch_size=self.batch_size, shuffle=True)
+
+        if self.valid_mode:
+            X_valid_tensor = torch.tensor(X_valid, dtype=torch.float32)
+            y_valid_tensor = torch.tensor(y_valid, dtype=torch.long)
+            if self.task == "binary_classification":
+                y_valid_tensor = torch.tensor(y_valid, dtype=torch.float32)
+                y_valid_tensor = torch.unsqueeze(y_valid_tensor, 1)
+
+        return train_loader, X_valid_tensor, y_valid_tensor
+
+    def fit(self, X, y, **kwargs):
+        """
+        Trains the MLP model on the provided data.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Training data.
+
+        y : array-like, shape (n_samples,)
+            Target values.
+
+        Returns
+        -------
+        self : object
+            Fitted classifier.
+        """
+        # Set input and output sizes based on data and initialize task
+        self.size_input = X.shape[1]
+        y = np.squeeze(np.array(y))
+        if y.ndim != 1:
+            y = np.argmax(y, axis=1)
+
+        self.classes_ = np.unique(y)
+        if len(self.classes_) == 2:
+            self.task = "binary_classification"
+            self.size_output = 1
         else:
-            y = y.astype(np.int64)
-        self.network.fit(X=X, y=y)
+            self.task = "classification"
+            self.size_output = len(self.classes_)
+
+        # Process data for training and validation
+        data = self.process_data(X, y, **kwargs)
+
+        # Build the model architecture
+        self.build_model()
+
+        # Train the model using processed data
+        self._fit(data, **kwargs)
+
         return self
 
-    def score(self, X, y, method="AS"):
+    def predict(self, X):
         """
-        Return the metric on the given test data and labels.
-
-        In multi-label classification, this is the subset accuracy which is a harsh metric
-        since you require for each sample that each label set be correctly predicted.
+        Predicts the class labels for the given input data.
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-            Test samples.
-
-        y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-            True labels for `X`.
-
-        method : str, default="AS"
-            You can get all metrics from Permetrics library: https://github.com/thieu1995/permetrics
+        X : array-like, shape (n_samples, n_features)
+            Input data.
 
         Returns
         -------
-        result : float
-            The result of selected metric
+        numpy.ndarray
+            Predicted class labels for each sample.
         """
-        return self._BaseMlpTorch__score_cls(X, y, method)
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        self.model.eval()
+        with torch.no_grad():
+            output = self.model(X_tensor)
+            _, predicted = torch.max(output, 1)
 
-    def scores(self, X, y, list_methods=("AS", "RS")):
+        return predicted.numpy()
+
+    def score(self, X, y):
         """
-        Return the list of metrics on the given test data and labels.
-
-        In multi-label classification, this is the subset accuracy which is a harsh metric
-        since you require for each sample that each label set be correctly predicted.
+        Computes the accuracy score for the classifier.
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-            Test samples.
+        X : array-like, shape (n_samples, n_features)
+            Input data.
 
-        y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-            True labels for `X`.
-
-        list_methods : list, default=("AS", "RS")
-            You can get all metrics from Permetrics library: https://github.com/thieu1995/permetrics
+        y : array-like, shape (n_samples,)
+            True class labels.
 
         Returns
         -------
-        results : dict
-            The results of the list metrics
+        float
+            Accuracy score of the classifier.
         """
-        return self._BaseMlpTorch__scores_cls(X, y, list_methods)
+        y_pred = self.predict(X)
+        return accuracy_score(y, y_pred)
+
+    def predict_proba(self, X):
+        """
+        Computes the probability estimates for each class (for classification tasks only).
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        numpy.ndarray
+            Probability predictions for each class.
+        """
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        if self.task not in ["classification", "binary_classification"]:
+            raise ValueError("predict_proba is only available for classification tasks.")
+
+        self.model.eval()  # Set model to evaluation mode
+        with torch.no_grad():
+            probs = self.model.forward(X_tensor)  # Forward pass to get probability estimates
+
+        return probs.numpy()  # Return as numpy array
 
     def evaluate(self, y_true, y_pred, list_metrics=("AS", "RS")):
         """
-        Return the list of performance metrics on the given test data and labels.
+        Returns performance metrics for the model on the provided test data.
 
         Parameters
         ----------
-        y_true : array-like of shape (n_samples,) or (n_samples, n_outputs)
-            True values for `X`.
+        y_true : array-like of shape (n_samples,)
+            True class labels.
 
-        y_pred : array-like of shape (n_samples,) or (n_samples, n_outputs)
-            Predicted values for `X`.
+        y_pred : array-like of shape (n_samples,)
+            Predicted class labels.
 
         list_metrics : list, default=("AS", "RS")
-            You can get metrics from Permetrics library: https://github.com/thieu1995/permetrics
+            List of performance metrics to calculate. Refer to Permetrics (https://github.com/thieu1995/permetrics) library for available metrics.
 
         Returns
         -------
-        results : dict
-            The results of the list metrics
+        dict
+            Dictionary with results for the specified metrics.
         """
-        return self._BaseMlpTorch__evaluate_cls(y_true, y_pred, list_metrics)
+        return self._BaseMlp__evaluate_cls(y_true, y_pred, list_metrics)
+
