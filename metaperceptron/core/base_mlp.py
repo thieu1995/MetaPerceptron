@@ -219,3 +219,263 @@ class CustomMLP(nn.Module):
         """
         return sum(param.numel() for param in self.parameters() if param.requires_grad)
 
+
+# Custom Sklearn-compatible MLP using PyTorch
+class BaseMlp(BaseEstimator):
+    """
+    A custom MLP model compatible with sklearn, implemented using PyTorch. This class supports
+    Multi-Layer Perceptron for both classification and regression tasks, with customizable
+    hidden layers, activation functions, and dropout rates.
+
+    Parameters
+    ----------
+    hidden_layers : list of int
+        Specifies the number of nodes in each hidden layer.
+    act_names : list of str
+        List of activation function names, one for each hidden layer.
+    dropout_rates : list of float
+        Dropout rates for each hidden layer (0 indicates no dropout).
+    task : str, optional
+        Task type, either "classification" or "regression". Default is "classification".
+    act_output : str or None, optional
+        Activation function for the output layer, default depends on the task type.
+    """
+
+    def __init__(self, hidden_layers, act_names, dropout_rates, task="classification", act_output=None):
+        self.hidden_layers = hidden_layers
+        self.act_names = act_names
+        self.dropout_rates = dropout_rates
+        self.task = task
+        self.act_output = act_output
+        self.model = None
+        self.loss_train = None
+
+    @staticmethod
+    def _check_method(method=None, list_supported_methods=None):
+        """
+        Validates if the given method is supported.
+
+        Parameters
+        ----------
+        method : str
+            The method to be checked.
+        list_supported_methods : list of str
+            A list of supported method names.
+
+        Returns
+        -------
+        bool
+            True if the method is supported; otherwise, raises ValueError.
+        """
+        if type(method) is str:
+            return validator.check_str("method", method, list_supported_methods)
+        else:
+            raise ValueError(f"method should be a string and belong to {list_supported_methods}")
+
+    def fit(self, X, y):
+        """
+        Train the MLP model on the given dataset.
+
+        Parameters
+        ----------
+        X : array-like or torch.Tensor
+            Training features.
+        y : array-like or torch.Tensor
+            Target values.
+        """
+        pass
+
+    def predict(self, X):
+        """
+        Generate predictions for input data using the trained model.
+
+        Parameters
+        ----------
+        X : array-like or torch.Tensor
+            Input features for prediction.
+
+        Returns
+        -------
+        array-like or torch.Tensor
+            Model predictions for each input sample.
+        """
+        pass
+
+    def score(self, X, y):
+        """
+        Evaluate the model on the given dataset.
+
+        Parameters
+        ----------
+        X : array-like or torch.Tensor
+            Evaluation features.
+        y : array-like or torch.Tensor
+            True values.
+
+        Returns
+        -------
+        float
+            The accuracy or evaluation score.
+        """
+        pass
+
+    def __evaluate_reg(self, y_true, y_pred, list_metrics=("MSE", "MAE")):
+        """
+        Evaluate regression performance metrics.
+
+        Parameters
+        ----------
+        y_true : array-like
+            True target values.
+        y_pred : array-like
+            Predicted values.
+        list_metrics : tuple of str, list of str
+            List of metrics for evaluation (e.g., "MSE" and "MAE").
+
+        Returns
+        -------
+        dict
+            Dictionary of calculated metric values.
+        """
+        rm = RegressionMetric(y_true=y_true, y_pred=y_pred)
+        return rm.get_metrics_by_list_names(list_metrics)
+
+    def __evaluate_cls(self, y_true, y_pred, list_metrics=("AS", "RS")):
+        """
+        Evaluate classification performance metrics.
+
+        Parameters
+        ----------
+        y_true : array-like
+            True target values.
+        y_pred : array-like
+            Predicted labels.
+        list_metrics : tuple of str, list of str
+            List of metrics for evaluation (e.g., "AS" and "RS").
+
+        Returns
+        -------
+        dict
+            Dictionary of calculated metric values.
+        """
+        cm = ClassificationMetric(y_true, y_pred)
+        return cm.get_metrics_by_list_names(list_metrics)
+
+    def evaluate(self, y_true, y_pred, list_metrics=None):
+        """
+        Evaluate the model using specified metrics.
+
+        Parameters
+        ----------
+        y_true : array-like
+            True target values.
+        y_pred : array-like
+            Model's predicted values.
+        list_metrics : list of str, optional
+            Names of metrics for evaluation (e.g., "MSE", "MAE").
+
+        Returns
+        -------
+        dict
+            Evaluation metrics and their values.
+        """
+        pass
+
+    def save_training_loss(self, save_path="history", filename="loss.csv"):
+        """
+        Save training loss history to a CSV file.
+
+        Parameters
+        ----------
+        save_path : str, optional
+            Path to save the file (default: "history").
+        filename : str, optional
+            Filename for saving loss history (default: "loss.csv").
+        """
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+        if self.loss_train is None:
+            print(f"{self.__class__.__name__} model doesn't have training loss!")
+        else:
+            data = {"epoch": list(range(1, len(self.loss_train) + 1)), "loss": self.loss_train}
+            pd.DataFrame(data).to_csv(f"{save_path}/{filename}", index=False)
+
+    def save_evaluation_metrics(self, y_true, y_pred, list_metrics=("RMSE", "MAE"), save_path="history",
+                                filename="metrics.csv"):
+        """
+        Save evaluation metrics to a CSV file.
+
+        Parameters
+        ----------
+        y_true : array-like
+            Ground truth values.
+        y_pred : array-like
+            Model predictions.
+        list_metrics : list of str, optional
+            Metrics for evaluation (default: ("RMSE", "MAE")).
+        save_path : str, optional
+            Path to save the file (default: "history").
+        filename : str, optional
+            Filename for saving metrics (default: "metrics.csv").
+        """
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+        results = self.evaluate(y_true, y_pred, list_metrics)
+        df = pd.DataFrame.from_dict(results, orient='index').T
+        df.to_csv(f"{save_path}/{filename}", index=False)
+
+    def save_y_predicted(self, X, y_true, save_path="history", filename="y_predicted.csv"):
+        """
+        Save true and predicted values to a CSV file.
+
+        Parameters
+        ----------
+        X : array-like or torch.Tensor
+            Input features.
+        y_true : array-like
+            True values.
+        save_path : str, optional
+            Path to save the file (default: "history").
+        filename : str, optional
+            Filename for saving predicted values (default: "y_predicted.csv").
+        """
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+        y_pred = self.predict(X)
+        data = {"y_true": np.squeeze(np.asarray(y_true)), "y_pred": np.squeeze(np.asarray(y_pred))}
+        pd.DataFrame(data).to_csv(f"{save_path}/{filename}", index=False)
+
+    def save_model(self, save_path="history", filename="model.pkl"):
+        """
+        Save the trained model to a pickle file.
+
+        Parameters
+        ----------
+        save_path : str, optional
+            Path to save the model (default: "history").
+        filename : str, optional
+            Filename for saving model, with ".pkl" extension (default: "model.pkl").
+        """
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+        if filename[-4:] != ".pkl":
+            filename += ".pkl"
+        pickle.dump(self, open(f"{save_path}/{filename}", 'wb'))
+
+    @staticmethod
+    def load_model(load_path="history", filename="model.pkl") -> EstimatorType:
+        """
+        Load a model from a pickle file.
+
+        Parameters
+        ----------
+        load_path : str, optional
+            Path to load the model from (default: "history").
+        filename : str, optional
+            Filename of the saved model (default: "model.pkl").
+
+        Returns
+        -------
+        BaseMlp
+            The loaded model.
+        """
+        if filename[-4:] != ".pkl":
+            filename += ".pkl"
+        return pickle.load(open(f"{load_path}/{filename}", 'rb'))
+
