@@ -176,9 +176,9 @@ class MlpClassifier(BaseStandardMlp, ClassifierMixin):
             Predicted class labels for each sample.
         """
         X_tensor = torch.tensor(X, dtype=torch.float32)
-        self.model.eval()
+        self.network.eval()
         with torch.no_grad():
-            output = self.model(X_tensor)
+            output = self.network(X_tensor)
             _, predicted = torch.max(output, 1)
 
         return predicted.numpy()
@@ -221,9 +221,9 @@ class MlpClassifier(BaseStandardMlp, ClassifierMixin):
         if self.task not in ["classification", "binary_classification"]:
             raise ValueError("predict_proba is only available for classification tasks.")
 
-        self.model.eval()  # Set model to evaluation mode
+        self.network.eval()  # Set model to evaluation mode
         with torch.no_grad():
-            probs = self.model.forward(X_tensor)  # Forward pass to get probability estimates
+            probs = self.network.forward(X_tensor)  # Forward pass to get probability estimates
 
         return probs.numpy()  # Return as numpy array
 
@@ -397,9 +397,9 @@ class MlpRegressor(BaseStandardMlp, RegressorMixin):
         """
         # Convert input features to tensor
         X_tensor = torch.tensor(X, dtype=torch.float32)
-        self.model.eval()  # Set model to evaluation mode
+        self.network.eval()  # Set model to evaluation mode
         with torch.no_grad():
-            predicted = self.model(X_tensor)  # Forward pass to get predictions
+            predicted = self.network(X_tensor)  # Forward pass to get predictions
         return predicted.numpy()  # Convert predictions to numpy array
 
     def score(self, X, y):

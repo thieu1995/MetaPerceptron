@@ -26,17 +26,17 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
 
     Parameters
     ----------
-    hidden_layers : tuple of int, optional
+    hidden_layers : list of int, tuple of int, or np.ndarray of int
         The structure of the hidden layers (default is (100,)).
-    act_names : str, optional
+    act_names : str
         Activation function name to use in hidden layers (default is "ReLU").
     dropout_rates : float, optional
         Dropout rate for regularization (default is 0.2).
     act_output : any, optional
         Activation function for the output layer (default is None).
-    optim : str, optional
+    optim : str
         The optimization algorithm to use (default is "BaseGA").
-    optim_paras : dict, optional
+    optim_paras : dict
         Parameters for the optimizer (default is None).
     obj_name : str, optional
         The objective name for the optimization (default is "F1S").
@@ -126,9 +126,9 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
             Predicted class labels for each sample.
         """
         X_tensor = torch.tensor(X, dtype=torch.float32)  # Convert input data to tensor
-        self.model.eval()  # Set model to evaluation mode
+        self.network.eval()  # Set model to evaluation mode
         with torch.no_grad():
-            output = self.model(X_tensor)  # Get model predictions
+            output = self.network(X_tensor)  # Get model predictions
             _, predicted = torch.max(output, 1)  # Get the predicted class labels
         return predicted.numpy()  # Return as a numpy array
 
@@ -175,9 +175,9 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
             raise ValueError(
                 "predict_proba is only available for classification tasks.")  # Raise error if task is invalid
 
-        self.model.eval()  # Ensure model is in evaluation mode
+        self.network.eval()  # Ensure model is in evaluation mode
         with torch.no_grad():
-            probs = self.model.forward(X_tensor)  # Get the output from forward pass
+            probs = self.network.forward(X_tensor)  # Get the output from forward pass
         return probs.numpy()  # Return probabilities as a numpy array
 
     def evaluate(self, y_true, y_pred, list_metrics=("AS", "RS")):
@@ -216,17 +216,17 @@ class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
 
     Parameters
     ----------
-    hidden_layers : tuple of int, optional
+    hidden_layers : list of int, tuple of int, or np.ndarray of int
         The structure of the hidden layers (default is (100,)).
-    act_names : str, optional
+    act_names : str
         Activation function name to use in hidden layers (default is "ELU").
     dropout_rates : float, optional
         Dropout rate for regularization (default is 0.2).
     act_output : any, optional
         Activation function for the output layer (default is None).
-    optim : str, optional
+    optim : str
         The optimization algorithm to use (default is "BaseGA").
-    optim_paras : dict, optional
+    optim_paras : dict
         Parameters for the optimizer (default is None).
     obj_name : str, optional
         The objective name for the optimization (default is "MSE").
@@ -312,9 +312,9 @@ class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
             Predicted output values for each sample.
         """
         X_tensor = torch.tensor(X, dtype=torch.float32)  # Convert input data to tensor
-        self.model.eval()  # Set model to evaluation mode
+        self.network.eval()  # Set model to evaluation mode
         with torch.no_grad():
-            predicted = self.model(X_tensor)  # Get model predictions
+            predicted = self.network(X_tensor)  # Get model predictions
         return predicted.numpy()  # Return predictions as a numpy array
 
     def score(self, X, y):

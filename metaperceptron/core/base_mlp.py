@@ -244,7 +244,7 @@ class BaseMlp(BaseEstimator):
         self.dropout_rates = dropout_rates
         self.task = task
         self.act_output = act_output
-        self.model = None
+        self.network = None
         self.loss_train = None
 
     @staticmethod
@@ -548,7 +548,7 @@ class BaseStandardMlp(BaseMlp):
         # Internal attributes for model, optimizer, and early stopping
         self.size_input = None
         self.size_output = None
-        self.model = None
+        self.network = None
         self.optimizer = None
         self.criterion = None
         self.patience_count = None
@@ -567,9 +567,9 @@ class BaseStandardMlp(BaseMlp):
             self.early_stopper = EarlyStopper(patience=self.n_patience, epsilon=self.epsilon)
 
         # Define model, optimizer, and loss criterion based on task
-        self.model = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
+        self.network = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
                                self.dropout_rates, self.task, self.act_output)
-        self.optimizer = getattr(torch.optim, self.optim)(self.model.parameters(), **self.optim_paras)
+        self.optimizer = getattr(torch.optim, self.optim)(self.network.parameters(), **self.optim_paras)
 
         # Select loss function based on task type
         if self.task == "classification":
@@ -609,7 +609,7 @@ class BaseStandardMlp(BaseMlp):
         train_loader, X_valid_tensor, y_valid_tensor = data
 
         # Start training
-        self.model.train()  # Set model to training mode
+        self.network.train()  # Set model to training mode
         for epoch in range(self.epochs):
             # Initialize total loss for this epoch
             total_loss = 0.0
@@ -619,7 +619,7 @@ class BaseStandardMlp(BaseMlp):
                 self.optimizer.zero_grad()  # Clear gradients
 
                 # Forward pass
-                output = self.model(batch_X)
+                output = self.network(batch_X)
                 loss = self.criterion(output, batch_y)  # Compute loss
 
                 # Backpropagation and optimization
@@ -633,9 +633,9 @@ class BaseStandardMlp(BaseMlp):
 
             # Perform validation if validation mode is enabled
             if self.valid_mode:
-                self.model.eval()  # Set model to evaluation mode
+                self.network.eval()  # Set model to evaluation mode
                 with torch.no_grad():
-                    val_output = self.model(X_valid_tensor)
+                    val_output = self.network(X_valid_tensor)
                     val_loss = self.criterion(val_output, y_valid_tensor)
 
                 # Early stopping based on validation loss
@@ -651,7 +651,7 @@ class BaseStandardMlp(BaseMlp):
                 print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}")
 
             # Return to training mode for next epoch
-            self.model.train()
+            self.network.train()
 
 
 class BaseMhaMlp(BaseMlp):
@@ -733,7 +733,7 @@ class BaseMhaMlp(BaseMlp):
         # Initialize model parameters
         self.size_input = None
         self.size_output = None
-        self.model = None
+        self.network = None
         self.optimizer = None
         self.obj_name = obj_name
         self.metric_class = None
@@ -781,7 +781,7 @@ class BaseMhaMlp(BaseMlp):
         ValueError
             If the task is not recognized.
         """
-        self.model = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
+        self.network = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
                                self.dropout_rates, self.task, self.act_output)
 
         self.optimizer = self._set_optimizer(self.optim, self.optim_paras)
@@ -850,8 +850,8 @@ class BaseMhaMlp(BaseMlp):
             The fitness value, representing the loss for the current solution.
         """
         X_train, y_train = self.data
-        self.model.set_weights(solution)
-        y_pred = self.model(X_train).detach().cpu().numpy()
+        self.network.set_weights(solution)
+        y_pred = self.network(X_train).detach().cpu().numpy()
         loss_train = self.metric_class(y_train, y_pred).get_metric_by_name(self.obj_name)[self.obj_name]
         return np.mean([loss_train])
 
@@ -890,7 +890,7 @@ class BaseMhaMlp(BaseMlp):
             If the objective name is None or not supported.
         """
         # Get data
-        n_dims = self.model.get_weights_size()
+        n_dims = self.network.get_weights_size()
         lb, ub = self._set_lb_ub(lb, ub, n_dims)
         self.data = data
 
@@ -915,6 +915,6 @@ class BaseMhaMlp(BaseMlp):
             self.optimizer.solve(problem, mode=mode, n_workers=n_workers, seed=self.seed)
         else:
             self.optimizer.solve(problem, mode=mode, n_workers=n_workers, termination=termination, seed=self.seed)
-        self.model.set_weights(self.optimizer.g_best.solution)
+        self.network.set_weights(self.optimizer.g_best.solution)
         self.loss_train = np.array(self.optimizer.history.list_global_best_fit)
         return self
