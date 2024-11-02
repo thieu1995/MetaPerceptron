@@ -479,3 +479,180 @@ class BaseMlp(BaseEstimator):
             filename += ".pkl"
         return pickle.load(open(f"{load_path}/{filename}", 'rb'))
 
+
+class BaseStandardMlp(BaseMlp):
+    """
+    A custom standard MLP (Multi-Layer Perceptron) class that extends the BaseMlp class with
+    additional features such as early stopping, validation, and various supported optimizers.
+
+    Attributes
+    ----------
+    SUPPORTED_OPTIMIZERS : list
+        A list of optimizer names supported by the class.
+
+
+    Parameters
+    ----------
+    hidden_layers : tuple
+        Number of neurons in each hidden layer.
+    act_names : str
+        Activation function(s) for each hidden layer.
+    dropout_rates : float
+        Dropout rate to prevent overfitting.
+    act_output : str
+        Activation function for the output layer.
+    epochs : int
+        Number of training epochs.
+    batch_size : int
+        Size of each training batch.
+    optim : str
+        Name of the optimizer to use from SUPPORTED_OPTIMIZERS.
+    optim_paras : dict, optional
+        Additional parameters for the optimizer.
+    early_stopping : bool
+        Flag to enable early stopping.
+    n_patience : int
+        Number of epochs to wait before stopping if no improvement.
+    epsilon : float
+        Minimum change to qualify as improvement.
+    valid_rate : float
+        Proportion of data to use for validation.
+    seed : int
+        Random seed for reproducibility.
+    verbose : bool
+        If True, outputs training progress.
+    """
+
+    SUPPORTED_OPTIMIZERS = [
+        "Adafactor", "Adadelta", "Adagrad", "Adam",
+        "Adamax", "AdamW", "ASGD", "LBFGS", "NAdam",
+        "RAdam", "RMSprop", "Rprop", "SGD", "SparseAdam",
+    ]
+
+    def __init__(self, hidden_layers=(100,), act_names="ReLU", dropout_rates=0.2, act_output=None,
+                 epochs=1000, batch_size=16, optim="Adam", optim_paras=None,
+                 early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
+                 seed=42, verbose=True):
+        """
+        Initialize the MLP with user-defined architecture, training parameters, and optimization settings.
+        """
+        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output)
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.optim = optim
+        self.optim_paras = optim_paras if optim_paras else {}
+        self.early_stopping = early_stopping
+        self.n_patience = n_patience
+        self.epsilon = epsilon
+        self.valid_rate = valid_rate
+        self.seed = seed
+        self.verbose = verbose
+
+        # Internal attributes for model, optimizer, and early stopping
+        self.size_input = None
+        self.size_output = None
+        self.model = None
+        self.optimizer = None
+        self.criterion = None
+        self.patience_count = None
+        self.valid_mode = False
+        self.early_stopper = None
+
+    def build_model(self):
+        """
+        Build and initialize the MLP model, optimizer, and criterion based on user specifications.
+
+        This function sets up the model structure, optimizer type and parameters,
+        and loss criterion depending on the task type (classification or regression).
+        """
+        if self.early_stopping:
+            # Initialize early stopper if early stopping is enabled
+            self.early_stopper = EarlyStopper(patience=self.n_patience, epsilon=self.epsilon)
+
+        # Define model, optimizer, and loss criterion based on task
+        self.model = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
+                               self.dropout_rates, self.task, self.act_output)
+        self.optimizer = getattr(torch.optim, self.optim)(self.model.parameters(), **self.optim_paras)
+
+        # Select loss function based on task type
+        if self.task == "classification":
+            self.criterion = nn.CrossEntropyLoss()
+        elif self.task == "binary_classification":
+            self.criterion = nn.BCEWithLogitsLoss()
+        else:
+            self.criterion = nn.MSELoss()
+
+    def process_data(self, X, y, **kwargs):
+        """
+        Process and prepare data for training.
+
+        Parameters
+        ----------
+        X : array-like
+            Feature data for training.
+        y : array-like
+            Target labels or values for training.
+        **kwargs : additional keyword arguments
+            Additional parameters for data processing, if needed.
+        """
+        pass  # Placeholder for data processing logic
+
+    def _fit(self, data, **kwargs):
+        """
+        Train the MLP model on the provided data.
+
+        Parameters
+        ----------
+        data : tuple
+            A tuple containing (train_loader, X_valid_tensor, y_valid_tensor) for training and validation.
+        **kwargs : additional keyword arguments
+            Additional parameters for training, if needed.
+        """
+        # Unpack training and validation data
+        train_loader, X_valid_tensor, y_valid_tensor = data
+
+        # Start training
+        self.model.train()  # Set model to training mode
+        for epoch in range(self.epochs):
+            # Initialize total loss for this epoch
+            total_loss = 0.0
+
+            # Training step over batches
+            for batch_X, batch_y in train_loader:
+                self.optimizer.zero_grad()  # Clear gradients
+
+                # Forward pass
+                output = self.model(batch_X)
+                loss = self.criterion(output, batch_y)  # Compute loss
+
+                # Backpropagation and optimization
+                loss.backward()
+                self.optimizer.step()
+
+                total_loss += loss.item()  # Accumulate batch loss
+
+            # Calculate average training loss for this epoch
+            avg_loss = total_loss / len(train_loader)
+
+            # Perform validation if validation mode is enabled
+            if self.valid_mode:
+                self.model.eval()  # Set model to evaluation mode
+                with torch.no_grad():
+                    val_output = self.model(X_valid_tensor)
+                    val_loss = self.criterion(val_output, y_valid_tensor)
+
+                # Early stopping based on validation loss
+                if self.early_stopping and self.early_stopper.early_stop(val_loss):
+                    print(f"Early stopping at epoch {epoch + 1}")
+                    break
+                print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}, Validation Loss: {val_loss:.4f}")
+            else:
+                # Early stopping based on training loss if no validation is used
+                if self.early_stopping and self.early_stopper.early_stop(avg_loss):
+                    print(f"Early stopping at epoch {epoch + 1}")
+                    break
+                print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}")
+
+            # Return to training mode for next epoch
+            self.model.train()
+
