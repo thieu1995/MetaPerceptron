@@ -84,6 +84,7 @@ class CustomMLP(nn.Module):
         - dropout_rates (list of float): Dropout rates for each hidden layer.
         - task (str): Task type, "classification", "binary_classification", or "regression".
         - act_output (str or None): Activation function for the output layer; uses default if None.
+        - seed (int or None): The random seed for reproducibility
     """
 
     SUPPORTED_ACTIVATIONS = [
@@ -95,11 +96,16 @@ class CustomMLP(nn.Module):
     ]
 
     def __init__(self, size_input, size_output, hidden_layers, act_names, dropout_rates,
-                 task="classification", act_output=None):
+                 task="classification", act_output=None, seed=None):
         """
         Initialize a customizable multi-layer perceptron (MLP) model.
         """
         super(CustomMLP, self).__init__()
+
+        if seed is not None:
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
 
         # Ensure hidden_layers is a valid list, tuple, or numpy array
         if not isinstance(hidden_layers, (list, tuple, np.ndarray, int)):
@@ -239,6 +245,8 @@ class BaseMlp(BaseEstimator):
         Task type, either "classification" or "regression". Default is "classification".
     act_output : str or None, optional
         Activation function for the output layer, default depends on the task type.
+    seed: int or None, optional
+        The seed value for the random number generator.
 
     Attributes
     ----------
@@ -251,12 +259,13 @@ class BaseMlp(BaseEstimator):
     SUPPORTED_CLS_METRICS = get_all_classification_metrics()
     SUPPORTED_REG_METRICS = get_all_regression_metrics()
 
-    def __init__(self, hidden_layers, act_names, dropout_rates, task="classification", act_output=None):
+    def __init__(self, hidden_layers, act_names, dropout_rates, task="classification", act_output=None, seed=None):
         self.hidden_layers = hidden_layers
         self.act_names = act_names
         self.dropout_rates = dropout_rates
         self.task = task
         self.act_output = act_output
+        self.seed = seed
         self.network = None
         self.loss_train = None
 
@@ -281,6 +290,9 @@ class BaseMlp(BaseEstimator):
             return validator.check_str("method", method, list_supported_methods)
         else:
             raise ValueError(f"method should be a string and belong to {list_supported_methods}")
+
+    def set_seed(self, seed):
+        self.seed = seed
 
     def fit(self, X, y):
         """
@@ -546,7 +558,7 @@ class BaseStandardMlp(BaseMlp):
         """
         Initialize the MLP with user-defined architecture, training parameters, and optimization settings.
         """
-        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output)
+        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output, seed=seed)
         self.epochs = epochs
         self.batch_size = batch_size
         self.optim = optim
@@ -555,7 +567,6 @@ class BaseStandardMlp(BaseMlp):
         self.n_patience = n_patience
         self.epsilon = epsilon
         self.valid_rate = valid_rate
-        self.seed = seed
         self.verbose = verbose
 
         # Internal attributes for model, optimizer, and early stopping
@@ -581,7 +592,7 @@ class BaseStandardMlp(BaseMlp):
 
         # Define model, optimizer, and loss criterion based on task
         self.network = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
-                               self.dropout_rates, self.task, self.act_output)
+                               self.dropout_rates, self.task, self.act_output, self.seed)
         self.optimizer = getattr(torch.optim, self.optim)(self.network.parameters(), **self.optim_paras)
 
         # Select loss function based on task type
@@ -735,10 +746,9 @@ class BaseMhaMlp(BaseMlp):
         """
         Initializes the BaseMhaMlp class.
         """
-        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output)
+        super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output, seed=seed)
         self.optim = optim
         self.optim_paras = optim_paras
-        self.seed = seed
         self.verbose = verbose
 
         # Initialize model parameters
