@@ -678,13 +678,15 @@ class BaseStandardMlp(BaseMlp):
                 if self.early_stopping and self.early_stopper.early_stop(val_loss):
                     print(f"Early stopping at epoch {epoch + 1}")
                     break
-                print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}, Validation Loss: {val_loss:.4f}")
+                if self.verbose:
+                    print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}, Validation Loss: {val_loss:.4f}")
             else:
                 # Early stopping based on training loss if no validation is used
                 if self.early_stopping and self.early_stopper.early_stop(avg_loss):
                     print(f"Early stopping at epoch {epoch + 1}")
                     break
-                print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}")
+                if self.verbose:
+                    print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}")
 
             # Return to training mode for next epoch
             self.network.train()
