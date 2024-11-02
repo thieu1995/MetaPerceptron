@@ -771,9 +771,23 @@ class BaseMhaMlp(BaseMlp):
         self.obj_name = obj_name
         self.metric_class = None
 
+    def set_optim_and_paras(self, optim=None, optim_paras=None):
+        """
+        Sets the `optim` and `optim_paras` parameters for this class.
+
+        Parameters
+        ----------
+        optim : str
+            The optimizer name to be set.
+        optim_paras : dict
+            Parameters to configure the optimizer.
+        """
+        self.optim = optim
+        self.optim_paras = optim_paras
+
     def _set_optimizer(self, optim=None, optim_paras=None):
         """
-        Sets the optimizer based on the provided optimizer name or instance.
+        Validates the real optimizer based on the provided `optim` and `optim_pras`.
 
         Parameters
         ----------
@@ -822,9 +836,7 @@ class BaseMhaMlp(BaseMlp):
             - It is intended to provide a consistent naming scheme for model instances
               based on the optimizer configuration.
         """
-        if type(self.optim) is str:
-            return f"{self.optim_paras}-MLP"
-        return f"{self.optimizer.name}-MLP"
+        return f"{self.optimizer.name}-MLP-{self.optim_paras}"
 
     def build_model(self):
         """
