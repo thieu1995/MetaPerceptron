@@ -178,9 +178,11 @@ class MlpClassifier(BaseStandardMlp, ClassifierMixin):
         X_tensor = torch.tensor(X, dtype=torch.float32)
         self.network.eval()
         with torch.no_grad():
-            output = self.network(X_tensor)
-            _, predicted = torch.max(output, 1)
-
+            output = self.network(X_tensor)  # Get model predictions
+            if self.task == "classification":  # Multi-class classification
+                _, predicted = torch.max(output, 1)
+            else:  # Binary classification
+                predicted = (output > 0.5).int().squeeze()
         return predicted.numpy()
 
     def score(self, X, y):

@@ -184,6 +184,20 @@ class CustomMLP(nn.Module):
         """
         return self.network(x)
 
+    # def set_weights(self, solution):
+    #     """
+    #     Set network weights based on a given solution vector.
+    #
+    #     Parameters:
+    #         - solution (np.ndarray): A flat array of weights to set in the model.
+    #     """
+    #     with torch.no_grad():
+    #         idx = 0
+    #         for param in self.network.parameters():
+    #             param_size = param.numel()
+    #             param.copy_(torch.tensor(solution[idx:idx + param_size]).view(param.shape))
+    #             idx += param_size
+
     def set_weights(self, solution):
         """
         Set network weights based on a given solution vector.
@@ -195,7 +209,8 @@ class CustomMLP(nn.Module):
             idx = 0
             for param in self.network.parameters():
                 param_size = param.numel()
-                param.copy_(torch.tensor(solution[idx:idx + param_size]).view(param.shape))
+                # Ensure dtype and device consistency
+                param.copy_(torch.tensor(solution[idx:idx + param_size], dtype=param.dtype, device=param.device).view(param.shape))
                 idx += param_size
 
     def get_weights(self):

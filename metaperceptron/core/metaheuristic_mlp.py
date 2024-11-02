@@ -129,7 +129,10 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
         self.network.eval()  # Set model to evaluation mode
         with torch.no_grad():
             output = self.network(X_tensor)  # Get model predictions
-            _, predicted = torch.max(output, 1)  # Get the predicted class labels
+            if self.task =="classification":        # Multi-class classification
+                _, predicted = torch.max(output, 1)
+            else:       # Binary classification
+                predicted = (output > 0.5).int().squeeze()
         return predicted.numpy()  # Return as a numpy array
 
     def score(self, X, y):
@@ -357,4 +360,4 @@ class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
         results : dict
             A dictionary containing the results of the requested metrics.
         """
-        return self._BaseMlp__evaluate_cls(y_true, y_pred, list_metrics)  # Call evaluation method
+        return self._BaseMlp__evaluate_reg(y_true, y_pred, list_metrics)  # Call evaluation method
