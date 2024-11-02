@@ -292,6 +292,18 @@ class BaseMlp(BaseEstimator):
             raise ValueError(f"method should be a string and belong to {list_supported_methods}")
 
     def set_seed(self, seed):
+        """
+        Set the random seed for the model to ensure reproducibility.
+
+        Parameters:
+            seed (int, None): The seed value to use for random number generators within the model.
+
+        Notes:
+            - This method stores the seed value in the `self.seed` attribute.
+            - Setting a seed helps achieve reproducible results, especially in
+              training neural networks where randomness affects initialization and
+              other stochastic operations.
+        """
         self.seed = seed
 
     def fit(self, X, y):
@@ -792,6 +804,27 @@ class BaseMhaMlp(BaseMlp):
             return optim
         else:
             raise TypeError(f"optimizer needs to set as a string and supported by Mealpy library.")
+
+    def get_name(self):
+        """
+        Generate a descriptive name for the MLP model based on the optimizer.
+
+        Returns:
+            str: A string representing the name of the model, including details
+            about the optimizer used. If `self.optim` is a string, the name
+            will be formatted as "<self.optim_paras>-MLP". Otherwise, it will
+            return "<self.optimizer.name>-MLP", assuming `self.optimizer` is an
+            object with a `name` attribute.
+
+        Notes:
+            - This method relies on the presence of `self.optim`, `self.optim_paras`,
+              and `self.optimizer.name` attributes within the model instance.
+            - It is intended to provide a consistent naming scheme for model instances
+              based on the optimizer configuration.
+        """
+        if type(self.optim) is str:
+            return f"{self.optim_paras}-MLP"
+        return f"{self.optimizer.name}-MLP"
 
     def build_model(self):
         """
