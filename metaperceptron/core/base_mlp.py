@@ -184,20 +184,6 @@ class CustomMLP(nn.Module):
         """
         return self.network(x)
 
-    # def set_weights(self, solution):
-    #     """
-    #     Set network weights based on a given solution vector.
-    #
-    #     Parameters:
-    #         - solution (np.ndarray): A flat array of weights to set in the model.
-    #     """
-    #     with torch.no_grad():
-    #         idx = 0
-    #         for param in self.network.parameters():
-    #             param_size = param.numel()
-    #             param.copy_(torch.tensor(solution[idx:idx + param_size]).view(param.shape))
-    #             idx += param_size
-
     def set_weights(self, solution):
         """
         Set network weights based on a given solution vector.
@@ -251,7 +237,17 @@ class BaseMlp(BaseEstimator):
         Task type, either "classification" or "regression". Default is "classification".
     act_output : str or None, optional
         Activation function for the output layer, default depends on the task type.
+
+    Attributes
+    ----------
+    SUPPORTED_CLS_METRICS : dict
+        Supported metrics for classification evaluation.
+    SUPPORTED_REG_METRICS : dict
+        Supported metrics for regression evaluation.
     """
+
+    SUPPORTED_CLS_METRICS = get_all_classification_metrics()
+    SUPPORTED_REG_METRICS = get_all_regression_metrics()
 
     def __init__(self, hidden_layers, act_names, dropout_rates, task="classification", act_output=None):
         self.hidden_layers = hidden_layers
@@ -731,8 +727,6 @@ class BaseMhaMlp(BaseMlp):
     SUPPORTED_OPTIMIZERS = list(get_all_optimizers().keys())
     SUPPORTED_CLS_OBJECTIVES = get_all_classification_metrics()
     SUPPORTED_REG_OBJECTIVES = get_all_regression_metrics()
-    SUPPORTED_CLS_METRICS = get_all_classification_metrics()
-    SUPPORTED_REG_METRICS = get_all_regression_metrics()
 
     def __init__(self, hidden_layers=(100,), act_names="ELU", dropout_rates=0.2, act_output=None,
                  optim="BaseGA", optim_paras=None, obj_name=None, seed=42, verbose=True):
