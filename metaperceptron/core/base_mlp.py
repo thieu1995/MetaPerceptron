@@ -6,18 +6,15 @@
 
 from typing import TypeVar
 import numpy as np
-import torch
-import torch.nn as nn
-from permetrics import ClassificationMetric, RegressionMetric
-from torch.utils.data import TensorDataset, DataLoader
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, r2_score
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-from metaperceptron.helpers.metric_util import get_all_regression_metrics, get_all_classification_metrics
-from mealpy import get_optimizer_by_name, Optimizer, get_all_optimizers, FloatVar
 import pickle
 import pandas as pd
 from pathlib import Path
+import torch
+import torch.nn as nn
+from sklearn.base import BaseEstimator
+from mealpy import get_optimizer_by_name, Optimizer, get_all_optimizers, FloatVar
+from permetrics import ClassificationMetric, RegressionMetric
+from metaperceptron.helpers.metric_util import get_all_regression_metrics, get_all_classification_metrics
 from metaperceptron.helpers import validator
 
 # Create a TypeVar for the base class
