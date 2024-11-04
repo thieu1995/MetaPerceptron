@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Created by "Thieu" at 13:24, 25/05/2022 ----------%
+# Created by "Thieu" at 13:24, 25/05/2024 ----------%
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
 # --------------------------------------------------%
@@ -15,10 +15,10 @@ def readme():
 
 setup(
     name="metaperceptron",
-    version="1.1.0",
+    version="2.0.0",
     author="Thieu",
     author_email="nguyenthieu2102@gmail.com",
-    description="MetaPerceptron: Unleashing the Power of Metaheuristic-optimized Multi-Layer Perceptron - A Python Library",
+    description="MetaPerceptron: A Standardized Framework for Metaheuristic-Trained Multi-Layer Perceptron",
     long_description=readme(),
     long_description_content_type="text/markdown",
     keywords=["multi-layer perceptron", "machine learning", "artificial intelligence",
@@ -71,8 +71,7 @@ setup(
         "Topic :: Utilities",
     ],
     install_requires=["numpy>=1.17.1", "scipy>=1.7.1", "scikit-learn>=1.0.2",
-                      "pandas>=1.3.5", "mealpy>=3.0.1", "permetrics>=1.5.0",
-                      "torch>=2.0.0", "skorch>=0.13.0"],
+                      "pandas>=1.3.5", "mealpy>=3.0.1", "permetrics>=2.0.0", "torch>=2.0.0"],
     extras_require={
         "dev": ["pytest>=7.0", "pytest-cov==4.0.0", "flake8>=4.0.1"],
     },
