@@ -6,7 +6,7 @@
 
 ---
 
-[![GitHub release](https://img.shields.io/badge/release-1.1.0-yellow.svg)](https://github.com/thieu1995/MetaPerceptron/releases)
+[![GitHub release](https://img.shields.io/badge/release-2.0.0-yellow.svg)](https://github.com/thieu1995/MetaPerceptron/releases)
 [![Wheel](https://img.shields.io/pypi/wheel/gensim.svg)](https://pypi.python.org/pypi/metaperceptron) 
 [![PyPI version](https://badge.fury.io/py/metaperceptron.svg)](https://badge.fury.io/py/metaperceptron)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/metaperceptron.svg)
@@ -30,16 +30,16 @@ optimizers for training MLP models and is also compatible with the Scikit-Learn 
 you can perform searches and hyperparameter tuning using the features provided by the Scikit-Learn library.
 
 * **Free software:** GNU General Public License (GPL) V3 license
-* **Provided Estimator**: MlpRegressor, MlpClassifier, MhaMlpRegressor, MhaMlpClassifier
-* **Total Metaheuristic-based MLP Regressor**: > 200 Models 
-* **Total Metaheuristic-based MLP Classifier**: > 200 Models
-* **Total Gradient Descent-based MLP Regressor**: 12 Models
-* **Total Gradient Descent-based MLP Classifier**: 12 Models
+* **Provided Estimator**: `MlpRegressor`, `MlpClassifier`, `MhaMlpRegressor`, `MhaMlpClassifier`
+* **Provided Utility**: `MhaMlpTuner` and `MhaMlpComparator` 
+* **Total Metaheuristic-trained MLP Regressor**: > 200 Models 
+* **Total Metaheuristic-trained MLP Classifier**: > 200 Models
+* **Total Gradient Descent-trained MLP Regressor**: 12 Models
+* **Total Gradient Descent-trained MLP Classifier**: 12 Models
 * **Supported performance metrics**: >= 67 (47 regressions and 20 classifications)
-* **Supported objective functions (as fitness functions or loss functions)**: >= 67 (47 regressions and 20 classifications)
 * **Documentation:** https://metaperceptron.readthedocs.io
 * **Python versions:** >= 3.8.x
-* **Dependencies:** numpy, scipy, scikit-learn, pandas, mealpy, permetrics, torch, skorch
+* **Dependencies:** numpy, scipy, scikit-learn, torch, mealpy, pandas, permetrics. 
 
 
 # Citation Request 
@@ -55,7 +55,7 @@ Please include these citations if you plan to use this library:
 
 @software{nguyen_van_thieu_2023_10251022,
   author       = {Nguyen Van Thieu},
-  title        = {MetaPerceptron: Unleashing the Power of Metaheuristic-optimized Multi-Layer Perceptron - A Python Library},
+  title        = {MetaPerceptron: A Standardized Framework for Metaheuristic-Trained Multi-Layer Perceptron},
   month        = dec,
   year         = 2023,
   publisher    = {Zenodo},
@@ -94,26 +94,14 @@ Please include these citations if you plan to use this library:
 
 ```
 
-# Installation
+# Simple Tutorial
 
 * Install the [current PyPI release](https://pypi.python.org/pypi/metaperceptron):
-```sh 
-$ pip install metaperceptron==1.1.0
+```sh
+$ pip install metaperceptron==2.0.0
 ```
 
-* Install directly from source code
-```sh 
-$ git clone https://github.com/thieu1995/MetaPerceptron.git
-$ cd MetaPerceptron
-$ python setup.py install
-```
-
-* In case, you want to install the development version from Github:
-```sh 
-$ pip install git+https://github.com/thieu1995/MetaPerceptron 
-```
-
-After installation, you can import MetaPerceptron as any other Python module:
+* Check the version:
 
 ```sh
 $ python
@@ -121,154 +109,51 @@ $ python
 >>> metaperceptron.__version__
 ```
 
-### Examples
-
-Please check all use cases and examples in folder [examples](examples).
-
-1) MetaPerceptron provides this useful classes
+* Import all provided classes from MetaPerceptron
 
 ```python
 from metaperceptron import DataTransformer, Data
-from metaperceptron import MlpRegressor, MlpClassifier
-from metaperceptron import MhaMlpRegressor, MhaMlpClassifier
+from metaperceptron import MhaMlpRegressor, MhaMlpClassifier, MlpRegressor, MlpClassifier
+from metaperceptron import MhaMlpTuner, MhaMlpComparator
 ```
 
-2) What you can do with `DataTransformer` class
-
-We provide many scaler classes that you can select and make a combination of transforming your data via 
-DataTransformer class. For example: 
-
-2.1) I want to scale data by `Loge` and then `Sqrt` and then `MinMax`:
+* In this tutorial, we will use Genetic Algorithm to train Multi-Layer Perceptron network for classification task.
+For more complex examples and use cases, please check the folder [examples](examples).
 
 ```python
-from metaperceptron import DataTransformer
-import pandas as pd
+from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
+from metaperceptron import DataTransformer, MhaMlpClassifier
 
-dataset = pd.read_csv('Position_Salaries.csv')
-X = dataset.iloc[:, 1:5].values
-y = dataset.iloc[:, 5].values
+## Load the dataset
+X, y = load_iris(return_X_y=True)
+
+## Split train and test
 X_train, y_train, X_test, y_test = train_test_split(X, y, test_size=0.2)
 
-dt = DataTransformer(scaling_methods=("loge", "sqrt", "minmax"))
+## Scale dataset with two methods: standard and minmax
+dt = DataTransformer(scaling_methods=("standard", "minmax"))
 X_train_scaled = dt.fit_transform(X_train)
 X_test_scaled = dt.transform(X_test)
-```
 
-2.2) I want to scale data by `YeoJohnson` and then `Standard`:
-
-```python
-from metaperceptron import DataTransformer
-import pandas as pd
-from sklearn.model_selection import train_test_split
-
-dataset = pd.read_csv('Position_Salaries.csv')
-X = dataset.iloc[:, 1:5].values
-y = dataset.iloc[:, 5].values
-X_train, y_train, X_test, y_test = train_test_split(X, y, test_size=0.2)
-
-dt = DataTransformer(scaling_methods=("yeo-johnson", "standard"))
-X_train_scaled = dt.fit_transform(X_train)
-X_test_scaled = dt.transform(X_test)
-```
-
-3) What can you do with `Data` class
-+ You can load your dataset into Data class
-+ You can split dataset to train and test set
-+ You can scale dataset without using DataTransformer class
-+ You can scale labels using LabelEncoder
-
-```python
-from metaperceptron import Data
-import pandas as pd
-
-dataset = pd.read_csv('Position_Salaries.csv')
-X = dataset.iloc[:, 1:5].values
-y = dataset.iloc[:, 5].values
-
-data = Data(X, y, name="position_salaries")
-
-#### Split dataset into train and test set
-data.split_train_test(test_size=0.2, shuffle=True, random_state=100, inplace=True)
-
-#### Feature Scaling
-data.X_train, scaler_X = data.scale(data.X_train, scaling_methods=("standard", "sqrt", "minmax"))
-data.X_test = scaler_X.transform(data.X_test)
-
-data.y_train, scaler_y = data.encode_label(data.y_train)  # This is for classification problem only
-data.y_test = scaler_y.transform(data.y_test)
-```
-
-4) What can you do with all model classes
-+ Define the model 
-+ Use provides functions to train, predict, and evaluate model
-
-```python
-from metaperceptron import MlpRegressor, MlpClassifier, MhaMlpRegressor, MhaMlpClassifier
-
-## Use standard MLP model for regression problem
-regressor = MlpRegressor(hidden_size=50, act1_name="tanh", act2_name="sigmoid", obj_name="MSE",
-                 max_epochs=1000, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=False)
-
-## Use standard MLP model for classification problem 
-classifier = MlpClassifier(hidden_size=50, act1_name="tanh", act2_name="sigmoid", obj_name="NLLL",
-                 max_epochs=1000, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=False)
-
-## Use Metaheuristic-optimized MLP model for regression problem
-print(MhaMlpClassifier.SUPPORTED_OPTIMIZERS)
-print(MhaMlpClassifier.SUPPORTED_REG_OBJECTIVES)
-
-opt_paras = {"name": "WOA", "epoch": 100, "pop_size": 30}
-regressor = MhaMlpRegressor(hidden_size=50, act1_name="tanh", act2_name="sigmoid",
-                 obj_name="MSE", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
-
-## Use Metaheuristic-optimized MLP model for classification problem
-print(MhaMlpClassifier.SUPPORTED_OPTIMIZERS)
-print(MhaMlpClassifier.SUPPORTED_CLS_OBJECTIVES)
-
-opt_paras = {"name": "WOA", "epoch": 100, "pop_size": 30}
-classifier = MhaMlpClassifier(hidden_size=50, act1_name="tanh", act2_name="softmax",
-                 obj_name="CEL", optimizer="OriginalWOA", optimizer_paras=opt_paras, verbose=True)
-```
-
-5) What can you do with model object
-
-```python
-from metaperceptron import MlpRegressor, Data 
-
-data = Data()       # Assumption that you have provide this object like above
-
-model = MlpRegressor(hidden_size=50, act1_name="tanh", act2_name="sigmoid", obj_name="MSE",
-                 max_epochs=1000, batch_size=32, optimizer="SGD", optimizer_paras=None, verbose=False)
-
+## Define Genetic Algorithm-trained Multi-Layer Perceptron
+opt_paras = {"epoch": 100, "pop_size": 20}
+model = MhaMlpClassifier(hidden_layers=(50,), act_names="Tanh", dropout_rates=None, act_output=None,
+                         optim="BaseGA", optim_paras=opt_paras, obj_name="F1S", seed=42, verbose=True)
 ## Train the model
-model.fit(data.X_train, data.y_train)
+model.fit(X=X_train_scaled, y=y_train)
 
-## Predicting a new result
-y_pred = model.predict(data.X_test)
+## Test the model
+y_pred = model.predict(X_test)
+print(y_pred)
 
-## Calculate metrics using score or scores functions.
-print(model.score(data.X_test, data.y_test, method="MAE"))
-print(model.scores(data.X_test, data.y_test, list_methods=["MAPE", "NNSE", "KGE", "MASE", "R2", "R", "R2S"]))
+## Print the score
+print(model.score(X_test_scaled, y_test))
 
-## Calculate metrics using evaluate function
-print(model.evaluate(data.y_test, y_pred, list_metrics=("MSE", "RMSE", "MAPE", "NSE")))
-
-## Save performance metrics to csv file
-model.save_evaluation_metrics(data.y_test, y_pred, list_metrics=("RMSE", "MAE"), save_path="history", filename="metrics.csv")
-
-## Save training loss to csv file
-model.save_training_loss(save_path="history", filename="loss.csv")
-
-## Save predicted label
-model.save_y_predicted(X=data.X_test, y_true=data.y_test, save_path="history", filename="y_predicted.csv")
-
-## Save model
-model.save_model(save_path="history", filename="traditional_mlp.pkl")
-
-## Load model 
-trained_model = MlpRegressor.load_model(load_path="history", filename="traditional_mlp.pkl")
+## Calculate some metrics
+print(model.evaluate(y_true=y_test, y_pred=y_pred, list_metrics=["AS", "PS", "RS", "F2S", "CKS", "FBS"]))
 ```
+
 
 # Support (questions, problems)
 
