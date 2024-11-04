@@ -29,8 +29,8 @@ class LabelEncoder:
         """
         Fit label encoder to a given set of labels.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         y : array-like
             Labels to encode.
         """
@@ -42,13 +42,13 @@ class LabelEncoder:
         """
         Transform labels to encoded integer labels.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         y : array-like (1-D vector)
             Labels to encode.
 
-        Returns:
-        --------
+        Returns
+        -------
         encoded_labels : array-like
             Encoded integer labels.
         """
@@ -77,13 +77,13 @@ class LabelEncoder:
         """
         Transform integer labels to original labels.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         y : array-like
             Encoded integer labels.
 
-        Returns:
-        --------
+        Returns
+        -------
         original_labels : array-like
             Original labels.
         """
@@ -107,7 +107,8 @@ class TimeSeriesDifferencer:
     def inverse_difference(self, diff_data):
         if self.original_data is None:
             raise ValueError("Original data is required for inversion.")
-        return np.array([diff_data[i - self.interval] + self.original_data[i - self.interval] for i in range(self.interval, len(self.original_data))])
+        return np.array([diff_data[i - self.interval] + self.original_data[i - self.interval] for i in
+                         range(self.interval, len(self.original_data))])
 
 
 class FeatureEngineering:
@@ -183,7 +184,7 @@ class Data:
         return y
 
     @staticmethod
-    def scale(X, scaling_methods=('standard', ), list_dict_paras=None):
+    def scale(X, scaling_methods=('standard',), list_dict_paras=None):
         X = np.squeeze(np.asarray(X))
         if X.ndim == 1:
             X = np.reshape(X, (-1, 1))
@@ -208,7 +209,9 @@ class Data:
         The wrapper of the split_train_test function in scikit-learn library.
         """
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size=test_size,
-                        train_size=train_size, random_state=random_state, shuffle=shuffle, stratify=stratify)
+                                                                                train_size=train_size,
+                                                                                random_state=random_state,
+                                                                                shuffle=shuffle, stratify=stratify)
         if not inplace:
             return self.X_train, self.X_test, self.y_train, self.y_test
 
