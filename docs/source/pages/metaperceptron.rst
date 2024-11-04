@@ -1,4 +1,4 @@
-metaperceptron package
+MetaPerceptron Package
 ======================
 
 .. toctree::

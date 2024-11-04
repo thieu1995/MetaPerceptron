@@ -4,10 +4,10 @@
    contain the root `toctree` directive.
 
 Welcome to MetaPerceptron's documentation!
-====================================
+==========================================
 
-.. image:: https://img.shields.io/badge/release-1.1.0-yellow.svg
-   :target: https://github.com/thieu1995/metaperceptron/releases
+.. image:: https://img.shields.io/badge/release-2.0.0-yellow.svg
+   :target: https://github.com/thieu1995/MetaPerceptron/releases
 
 .. image:: https://img.shields.io/pypi/wheel/gensim.svg
    :target: https://pypi.python.org/pypi/metaperceptron
@@ -59,16 +59,16 @@ optimizers for training MLP models and is also compatible with the Scikit-Learn 
 you can perform searches and hyperparameter tuning using the features provided by the Scikit-Learn library.
 
 * **Free software:** GNU General Public License (GPL) V3 license
-* **Provided Estimator**: MlpRegressor, MlpClassifier, MhaMlpRegressor, MhaMlpClassifier
+* **Provided Estimator**: `MlpRegressor`, `MlpClassifier`, `MhaMlpRegressor`, `MhaMlpClassifier`
+* **Provided Utility**: `MhaMlpTuner` and `MhaMlpComparator`
 * **Total Metaheuristic-based MLP Regressor**: > 200 Models
 * **Total Metaheuristic-based MLP Classifier**: > 200 Models
 * **Total Gradient Descent-based MLP Regressor**: 12 Models
 * **Total Gradient Descent-based MLP Classifier**: 12 Models
 * **Supported performance metrics**: >= 67 (47 regressions and 20 classifications)
-* **Supported objective functions (as fitness functions or loss functions)**: >= 67 (47 regressions and 20 classifications)
 * **Documentation:** https://metaperceptron.readthedocs.io
 * **Python versions:** >= 3.8.x
-* **Dependencies:** numpy, scipy, scikit-learn, pandas, mealpy, permetrics, torch, skorch
+* **Dependencies:** numpy, scipy, scikit-learn, torch, mealpy, pandas, permetrics.
 
 .. toctree::
    :maxdepth: 4

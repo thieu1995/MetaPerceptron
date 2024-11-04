@@ -13,7 +13,7 @@ Please include these citations if you plan to use this library::
 
     @software{nguyen_van_thieu_2023_10251022,
       author       = {Nguyen Van Thieu},
-      title        = {MetaPerceptron: Unleashing the Power of Metaheuristic-optimized Multi-Layer Perceptron - A Python Library},
+      title        = {MetaPerceptron: A Standardized Framework for Metaheuristic-Trained Multi-Layer Perceptron},
       month        = dec,
       year         = 2023,
       publisher    = {Zenodo},
@@ -51,18 +51,18 @@ Please include these citations if you plan to use this library::
     }
 ```
 
-If you have an open-ended or a research question, you can contact me via nguyenthieu2102@gmail.com
+If you have an open-ended or a research question, you can contact me via `nguyenthieu2102@gmail.com`
 
 
 ===============
 Important links
 ===============
 
-* Official source code repo: https://github.com/thieu1995/metaperceptron
+* Official source code repo: https://github.com/thieu1995/MetaPerceptron
 * Official document: https://metaperceptron.readthedocs.io/
 * Download releases: https://pypi.org/project/metaperceptron/
-* Issue tracker: https://github.com/thieu1995/metaperceptron/issues
-* Notable changes log: https://github.com/thieu1995/metaperceptron/blob/master/ChangeLog.md
+* Issue tracker: https://github.com/thieu1995/MetaPerceptron/issues
+* Notable changes log: https://github.com/thieu1995/MetaPerceptron/blob/master/ChangeLog.md
 
 * This project also related to our another projects which are "optimization" and "machine learning", check it here:
     * https://github.com/thieu1995/mealpy
