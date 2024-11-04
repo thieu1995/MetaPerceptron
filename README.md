@@ -39,7 +39,7 @@ you can perform searches and hyperparameter tuning using the features provided b
 * **Supported performance metrics**: >= 67 (47 regressions and 20 classifications)
 * **Documentation:** https://metaperceptron.readthedocs.io
 * **Python versions:** >= 3.8.x
-* **Dependencies:** numpy, scipy, scikit-learn, torch, mealpy, pandas, permetrics. 
+* **Dependencies:** numpy, scipy, scikit-learn, pytorch, mealpy, pandas, permetrics. 
 
 
 # Citation Request 
@@ -52,7 +52,6 @@ The paper can be accessed at the following [link](https://doi.org/10.1016/j.ins.
 Please include these citations if you plan to use this library:
 
 ```code
-
 @software{nguyen_van_thieu_2023_10251022,
   author       = {Nguyen Van Thieu},
   title        = {MetaPerceptron: A Standardized Framework for Metaheuristic-Trained Multi-Layer Perceptron},
@@ -109,7 +108,7 @@ $ python
 >>> metaperceptron.__version__
 ```
 
-* Import all provided classes from MetaPerceptron
+* Here is how you can import all provided classes from `MetaPerceptron`
 
 ```python
 from metaperceptron import DataTransformer, Data
@@ -138,7 +137,7 @@ X_test_scaled = dt.transform(X_test)
 
 ## Define Genetic Algorithm-trained Multi-Layer Perceptron
 opt_paras = {"epoch": 100, "pop_size": 20}
-model = MhaMlpClassifier(hidden_layers=(50,), act_names="Tanh", dropout_rates=None, act_output=None,
+model = MhaMlpClassifier(hidden_layers=(50, 15), act_names="Tanh", dropout_rates=None, act_output=None,
                          optim="BaseGA", optim_paras=opt_paras, obj_name="F1S", seed=42, verbose=True)
 ## Train the model
 model.fit(X=X_train_scaled, y=y_train)
@@ -159,21 +158,9 @@ print(model.evaluate(y_true=y_test, y_pred=y_pred, list_metrics=["AS", "PS", "RS
 
 ### Official Links 
 
-* Official source code repo: https://github.com/thieu1995/MetaPerceptron
-* Official document: https://metapeceptron.readthedocs.io/
-* Download releases: https://pypi.org/project/metaperceptron/
-* Issue tracker: https://github.com/thieu1995/MetaPerceptron/issues
-* Notable changes log: https://github.com/thieu1995/MetaPerceptron/blob/master/ChangeLog.md
-* Official chat group: https://t.me/+fRVCJGuGJg1mNDg1
-
-* This project also related to our another projects which are "optimization" and "machine learning", check it here:
-    * https://github.com/thieu1995/mealpy
-    * https://github.com/thieu1995/metaheuristics
-    * https://github.com/thieu1995/opfunu
-    * https://github.com/thieu1995/enoppy
-    * https://github.com/thieu1995/permetrics
-    * https://github.com/thieu1995/MetaCluster
-    * https://github.com/thieu1995/pfevaluator
-    * https://github.com/thieu1995/IntelELM
-    * https://github.com/thieu1995/reflame
-    * https://github.com/aiir-team
+* Official source code repo: [link](https://github.com/thieu1995/MetaPerceptron)
+* Official document: [link](https://metapeceptron.readthedocs.io/)
+* Download releases: [link](https://pypi.org/project/metaperceptron/)
+* Issue tracker: [link](https://github.com/thieu1995/MetaPerceptron/issues)
+* Notable changes log: [link](https://github.com/thieu1995/MetaPerceptron/blob/master/ChangeLog.md)
+* Official chat group: [link](https://t.me/+fRVCJGuGJg1mNDg1)
