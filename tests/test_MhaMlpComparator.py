@@ -8,10 +8,11 @@ import pytest
 import numpy as np
 from metaperceptron import MhaMlpComparator
 
+
 # Sample optimizer dictionary for testing
 optim_dict = {
-    'BaseGA':       {"epoch": 10, "pop_size": 20},
-    "OriginalPSO":  {"epoch": 10, "pop_size": 20},
+    'BaseGA': {"epoch": 10, "pop_size": 20},
+    "OriginalPSO": {"epoch": 10, "pop_size": 20},
 }
 
 # Sample data

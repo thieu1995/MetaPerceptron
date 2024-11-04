@@ -9,7 +9,6 @@ import numpy as np
 import torch
 from metaperceptron import MlpRegressor
 
-
 # Test data
 X = np.random.rand(100, 5)  # 100 samples, 5 features each
 y = np.random.rand(100, 1)  # 100 target values
