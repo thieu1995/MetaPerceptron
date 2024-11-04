@@ -21,6 +21,7 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
     ----------
     classes_ : np.ndarray
         Unique classes found in the target variable.
+
     metric_class : type
         The metric class used for evaluating classification performance.
 
@@ -28,20 +29,28 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
     ----------
     hidden_layers : list of int, tuple of int, or np.ndarray of int
         The structure of the hidden layers (default is (100,)).
+
     act_names : str
         Activation function name to use in hidden layers (default is "ReLU").
+
     dropout_rates : float, optional
         Dropout rate for regularization (default is 0.2).
+
     act_output : any, optional
         Activation function for the output layer (default is None).
+
     optim : str
         The optimization algorithm to use (default is "BaseGA").
+
     optim_paras : dict
         Parameters for the optimizer (default is None).
+
     obj_name : str, optional
         The objective name for the optimization (default is "F1S").
+
     seed : int, optional
         Random seed for reproducibility (default is 42).
+
     verbose : bool, optional
         Whether to print detailed logs during fitting (default is True).
     """

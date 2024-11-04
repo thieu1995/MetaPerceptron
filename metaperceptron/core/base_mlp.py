@@ -79,9 +79,9 @@ class CustomMLP(nn.Module):
     Parameters:
         - size_input (int): Number of input features.
         - size_output (int): Number of output nodes.
-        - hidden_layers (list of int): Number of nodes in each hidden layer.
-        - act_names (list of str or nn.Module): Activation functions for each hidden layer.
-        - dropout_rates (list of float): Dropout rates for each hidden layer.
+        - hidden_layers (list of int, tuple of int, int): Number of nodes in each hidden layer.
+        - act_names (list of str, tuple of str, str): Activation functions for each hidden layer.
+        - dropout_rates (list of float, tuple of float, float): Dropout rates for each hidden layer.
         - task (str): Task type, "classification", "binary_classification", or "regression".
         - act_output (str or None): Activation function for the output layer; uses default if None.
         - seed (int or None): The random seed for reproducibility
@@ -235,16 +235,21 @@ class BaseMlp(BaseEstimator):
 
     Parameters
     ----------
-    hidden_layers : list of int
+    hidden_layers : list of int, tuple of int, int
         Specifies the number of nodes in each hidden layer.
-    act_names : list of str
+
+    act_names : list of str, tuple of str, str
         List of activation function names, one for each hidden layer.
-    dropout_rates : list of float
+
+    dropout_rates : list of float, tuple of float, float
         Dropout rates for each hidden layer (0 indicates no dropout).
+
     task : str, optional
         Task type, either "classification" or "regression". Default is "classification".
+
     act_output : str or None, optional
         Activation function for the output layer, default depends on the task type.
+
     seed: int or None, optional
         The seed value for the random number generator.
 
@@ -527,32 +532,45 @@ class BaseStandardMlp(BaseMlp):
 
     Parameters
     ----------
-    hidden_layers : tuple
+    hidden_layers : tuple, list, int
         Number of neurons in each hidden layer.
-    act_names : str
+
+    act_names : tuple, list, str
         Activation function(s) for each hidden layer.
-    dropout_rates : float
+
+    dropout_rates : tuple, list, float
         Dropout rate to prevent overfitting.
+
     act_output : str
         Activation function for the output layer.
+
     epochs : int
         Number of training epochs.
+
     batch_size : int
         Size of each training batch.
+
     optim : str
         Name of the optimizer to use from SUPPORTED_OPTIMIZERS.
+
     optim_paras : dict, optional
         Additional parameters for the optimizer.
+
     early_stopping : bool
         Flag to enable early stopping.
+
     n_patience : int
         Number of epochs to wait before stopping if no improvement.
+
     epsilon : float
         Minimum change to qualify as improvement.
+
     valid_rate : float
         Proportion of data to use for validation.
+
     seed : int
         Random seed for reproducibility.
+
     verbose : bool
         If True, outputs training progress.
     """
@@ -711,22 +729,30 @@ class BaseMhaMlp(BaseMlp):
 
     Parameters
     ----------
-    hidden_layers : tuple of int
+    hidden_layers : tuple, list, int
         The number of neurons in each hidden layer.
-    act_names : str
+
+    act_names : tuple, list, str
         The name of the activation function to be used.
-    dropout_rates : float
+
+    dropout_rates : tuple, list, float
         The dropout rate for regularization.
+
     act_output : any, optional
         Activation function for output layer (default is None).
+
     optim : str
         Name of the optimization algorithm to be used.
+
     optim_paras : dict, optional
         Parameters for the optimizer (default is None).
+
     obj_name : str, optional
         Objective name for the model evaluation (default is None).
+
     seed : int
         Random seed for reproducibility (default is 42).
+
     verbose : bool
         Whether to print verbose output during training (default is True).
 
