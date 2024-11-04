@@ -68,7 +68,7 @@ you can perform searches and hyperparameter tuning using the features provided b
 * **Supported performance metrics**: >= 67 (47 regressions and 20 classifications)
 * **Documentation:** https://metaperceptron.readthedocs.io
 * **Python versions:** >= 3.8.x
-* **Dependencies:** numpy, scipy, scikit-learn, torch, mealpy, pandas, permetrics.
+* **Dependencies:** numpy, scipy, scikit-learn, pytorch, mealpy, pandas, permetrics.
 
 .. toctree::
    :maxdepth: 4
