@@ -2,14 +2,21 @@
 Citation Request
 ================
 
-Note::
-
-    If you want to understand how Metaheuristic is applied to Multi-Layer Perceptron, you need to read the paper
-    titled `Let a biogeography-based optimizer train your Multi-Layer Perceptron`.
-    The paper can be accessed at the following `this link <https://doi.org/10.1016/j.ins.2014.01.038>`_
+If you want to understand how Metaheuristic is applied to Multi-Layer Perceptron, you need to read the paper `link <https://doi.org/10.1016/j.csi.2025.103977>`_
 
 
 Please include these citations if you plan to use this library::
+
+    @article{van2025metaperceptron,
+        title={MetaPerceptron: A Standardized Framework for Metaheuristic-Driven Multi-Layer Perceptron Optimization},
+        author={Van Thieu, Nguyen and Mirjalili, Seyedali and Garg, Harish and Hoang, Nguyen Thanh},
+        journal={Computer Standards \& Interfaces},
+        pages={103977},
+        year={2025},
+        publisher={Elsevier},
+        doi={10.1016/j.csi.2025.103977},
+        url={https://doi.org/10.1016/j.csi.2025.103977}
+    }
 
     @software{nguyen_van_thieu_2023_10251022,
       author       = {Nguyen Van Thieu},

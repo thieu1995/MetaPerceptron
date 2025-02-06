@@ -24,8 +24,8 @@
 
 
 MetaPerceptron (Metaheuristic-optimized Multi-Layer Perceptron) is a Python library that implements variants and the 
-traditional version of Multi-Layer Perceptron models. These include Metaheuristic-optimized MLP models (GA, PSO, WOA, TLO, DE, ...) 
-and Gradient Descent-optimized MLP models (SGD, Adam, Adelta, Adagrad, ...). It provides a comprehensive list of 
+traditional version of Multi-Layer Perceptron models. These include Metaheuristic-trained MLP models (GA, PSO, WOA, TLO, DE, ...) 
+and Gradient Descent-trained MLP models (SGD, Adam, Adelta, Adagrad, ...). It provides a comprehensive list of 
 optimizers for training MLP models and is also compatible with the Scikit-Learn library. With MetaPerceptron, 
 you can perform searches and hyperparameter tuning using the features provided by the Scikit-Learn library.
 
@@ -44,22 +44,21 @@ you can perform searches and hyperparameter tuning using the features provided b
 
 # Citation Request 
 
-If you want to understand how Metaheuristic is applied to Multi-Layer Perceptron, you need to read the paper 
-titled **"Let a biogeography-based optimizer train your Multi-Layer Perceptron"**. 
-The paper can be accessed at the following [link](https://doi.org/10.1016/j.ins.2014.01.038)
+If you want to understand how Metaheuristic is applied to Multi-Layer Perceptron, you need to read the paper [link](https://doi.org/10.1016/j.csi.2025.103977)
 
 
 Please include these citations if you plan to use this library:
 
 ```code
-@software{nguyen_van_thieu_2023_10251022,
-  author       = {Nguyen Van Thieu},
-  title        = {MetaPerceptron: A Standardized Framework for Metaheuristic-Trained Multi-Layer Perceptron},
-  month        = dec,
-  year         = 2023,
-  publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.10251021},
-  url          = {https://github.com/thieu1995/MetaPerceptron}
+@article{van2025metaperceptron,
+  title={MetaPerceptron: A Standardized Framework for Metaheuristic-Driven Multi-Layer Perceptron Optimization},
+  author={Van Thieu, Nguyen and Mirjalili, Seyedali and Garg, Harish and Hoang, Nguyen Thanh},
+  journal={Computer Standards \& Interfaces},
+  pages={103977},
+  year={2025},
+  publisher={Elsevier},
+  doi={10.1016/j.csi.2025.103977},
+  url={https://doi.org/10.1016/j.csi.2025.103977}
 }
 
 @article{van2023mealpy,
@@ -78,19 +77,9 @@ Please include these citations if you plan to use this library:
   volume={617},
   pages={129034},
   year={2023},
-  publisher={Elsevier}
+  publisher={Elsevier},
+  doi={10.1016/j.jhydrol.2022.129034}
 }
-
-@article{thieu2019efficient,
-  title={Efficient time-series forecasting using neural network and opposition-based coral reefs optimization},
-  author={Thieu Nguyen, Tu Nguyen and Nguyen, Binh Minh and Nguyen, Giang},
-  journal={International Journal of Computational Intelligence Systems},
-  volume={12},
-  number={2},
-  pages={1144--1161},
-  year={2019}
-}
-
 ```
 
 # Simple Tutorial
