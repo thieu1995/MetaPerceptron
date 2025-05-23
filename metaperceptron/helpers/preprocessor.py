@@ -9,6 +9,44 @@ from metaperceptron.helpers.scaler_util import DataTransformer
 from sklearn.model_selection import train_test_split
 
 
+class OneHotEncoder:
+    """
+    Encode categorical features as a one-hot numeric array.
+    This is useful for converting categorical variables into a format that can be provided to ML algorithms.
+    """
+    def __init__(self):
+        self.categories_ = None
+
+    def fit(self, X):
+        """Fit the encoder to unique categories in X."""
+        self.categories_ = np.unique(X)
+        return self
+
+    def transform(self, X):
+        """Transform X into one-hot encoded format."""
+        if self.categories_ is None:
+            raise ValueError("The encoder has not been fitted yet.")
+        one_hot = np.zeros((X.shape[0], len(self.categories_)), dtype=int)
+        for i, val in enumerate(X):
+            index = np.where(self.categories_ == val)[0][0]
+            one_hot[i, index] = 1
+        return one_hot
+
+    def fit_transform(self, X):
+        """Fit the encoder to X and transform X."""
+        self.fit(X)
+        return self.transform(X)
+
+    def inverse_transform(self, one_hot):
+        """Convert one-hot encoded format back to original categories."""
+        if self.categories_ is None:
+            raise ValueError("The encoder has not been fitted yet.")
+        if one_hot.shape[1] != len(self.categories_):
+            raise ValueError("The shape of the input does not match the number of categories.")
+        original = np.array([self.categories_[np.argmax(row)] for row in one_hot])
+        return original
+
+
 class LabelEncoder:
     """
     Encode categorical features as integer labels.
@@ -17,13 +55,6 @@ class LabelEncoder:
     def __init__(self):
         self.unique_labels = None
         self.label_to_index = {}
-
-    @staticmethod
-    def check_y(y):
-        y = np.squeeze(np.asarray(y))
-        if y.ndim != 1:
-            raise ValueError("y label should have shape like 1-D vector.")
-        return y
 
     def fit(self, y):
         """
@@ -34,7 +65,6 @@ class LabelEncoder:
         y : array-like
             Labels to encode.
         """
-        y = self.check_y(y)
         self.unique_labels = np.unique(y)
         self.label_to_index = {label: i for i, label in enumerate(self.unique_labels)}
 
@@ -44,15 +74,14 @@ class LabelEncoder:
 
         Parameters
         ----------
-        y : array-like (1-D vector)
+        y : array-like
             Labels to encode.
 
-        Returns
-        -------
+        Returns:
+        --------
         encoded_labels : array-like
             Encoded integer labels.
         """
-        y = self.check_y(y)
         if self.unique_labels is None:
             raise ValueError("Label encoder has not been fit yet.")
         return np.array([self.label_to_index[label] for label in y])
@@ -87,7 +116,6 @@ class LabelEncoder:
         original_labels : array-like
             Original labels.
         """
-        y = self.check_y(y)
         if self.unique_labels is None:
             raise ValueError("Label encoder has not been fit yet.")
         return np.array([self.unique_labels[i] if i in self.label_to_index.values() else "unknown" for i in y])
