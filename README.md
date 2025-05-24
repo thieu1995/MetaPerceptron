@@ -23,34 +23,33 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 
-MetaPerceptron (Metaheuristic-optimized Multi-Layer Perceptron) is a Python library that implements variants and the 
-traditional version of Multi-Layer Perceptron models. These include Metaheuristic-trained MLP models (GA, PSO, WOA, TLO, DE, ...) 
-and Gradient Descent-trained MLP models (SGD, Adam, Adelta, Adagrad, ...). It provides a comprehensive list of 
-optimizers for training MLP models and is also compatible with the Scikit-Learn library. With MetaPerceptron, 
-you can perform searches and hyperparameter tuning using the features provided by the Scikit-Learn library.
+`MetaPerceptron` (Metaheuristic-optimized Multi-Layer Perceptron) is a powerful and extensible Python library that 
+brings the best of both worlds: metaheuristic optimization and deep learning via Multi-Layer Perceptron (MLP). 
+Whether you're working with classic Gradient Descent techniques or state-of-the-art metaheuristic algorithms 
+like GA, PSO, WOA, DE, etc., `MetaPerceptron` has you covered. With `MetaPerceptron`, you can perform searches, 
+feature selection, and hyperparameter tuning using the features provided by the Scikit-Learn library.
 
-* **Free software:** GNU General Public License (GPL) V3 license
-* **Provided Estimator**: `MlpRegressor`, `MlpClassifier`, `MhaMlpRegressor`, `MhaMlpClassifier`
-* **Provided Utility**: `MhaMlpTuner` and `MhaMlpComparator` 
-* **Total Metaheuristic-trained MLP Regressor**: > 200 Models 
-* **Total Metaheuristic-trained MLP Classifier**: > 200 Models
-* **Total Gradient Descent-trained MLP Regressor**: 12 Models
-* **Total Gradient Descent-trained MLP Classifier**: 12 Models
-* **Supported performance metrics**: >= 67 (47 regressions and 20 classifications)
-* **Supported utility functions**: GPU for Gradient-based models, Scikit-learn compatibility, and more
-* **Documentation:** https://metaperceptron.readthedocs.io
-* **Python versions:** >= 3.8.x
-* **Dependencies:** numpy, scipy, scikit-learn, pytorch, mealpy, pandas, permetrics. 
+## 🚀 Features at a Glance
 
-
-# Citation Request 
-
-If you want to understand how Metaheuristic is applied to Multi-Layer Perceptron, you need to read the paper [link](https://doi.org/10.1016/j.csi.2025.103977)
+- 🔧 **Estimators**: `MlpRegressor`, `MlpClassifier`, `MhaMlpRegressor`, `MhaMlpClassifier`
+- 📊 **Utilities**: `MhaMlpTuner`, `MhaMlpComparator`
+- 🧠 **Model Zoo**:
+  - 200+ Metaheuristic-trained MLP Regressors
+  - 200+ Metaheuristic-trained MLP Classifiers
+  - 12 Gradient Descent-trained MLP Regressors
+  - 12 Gradient Descent-trained MLP Classifiers
+- 📏 **67+ Performance Metrics** (47 for regression, 20 for classification)
+- ⚙️ **Support**: GPU support (for GD-based models), Scikit-learn compatible API
+- 📚 **Documentation**: https://metaperceptron.readthedocs.io
+- 🐍 **Python**: 3.8+
+- 📦 **Dependencies**: numpy, scipy, scikit-learn, pytorch, mealpy, pandas, permetrics
 
 
-Please include these citations if you plan to use this library:
+## 📖 Citation
 
-```code
+If MetaPerceptron supports your work, please consider citing the following:
+
+```bibtex
 @article{van2025metaperceptron,
   title={MetaPerceptron: A Standardized Framework for Metaheuristic-Driven Multi-Layer Perceptron Optimization},
   author={Van Thieu, Nguyen and Mirjalili, Seyedali and Garg, Harish and Hoang, Nguyen Thanh},
@@ -83,22 +82,26 @@ Please include these citations if you plan to use this library:
 }
 ```
 
-# Simple Tutorial
 
-* Install the [current PyPI release](https://pypi.python.org/pypi/metaperceptron):
-```sh
-$ pip install metaperceptron
+## 🧪 Quick Start
+
+Install via [current PyPI release](https://pypi.python.org/pypi/metaperceptron):
+
+```bash
+pip install metaperceptron
 ```
 
-* Check the version:
+Check version:
 
-```sh
-$ python
->>> import metaperceptron
->>> metaperceptron.__version__
+```python
+import metaperceptron
+print(metaperceptron.__version__)
 ```
 
-* Here is how you can import all provided classes from `MetaPerceptron`
+
+### ✅ Import core components
+
+Here is how you can import all provided classes from `MetaPerceptron`
 
 ```python
 from metaperceptron import DataTransformer, Data
@@ -106,7 +109,9 @@ from metaperceptron import MhaMlpRegressor, MhaMlpClassifier, MlpRegressor, MlpC
 from metaperceptron import MhaMlpTuner, MhaMlpComparator
 ```
 
-* In this tutorial, we will use Genetic Algorithm to train Multi-Layer Perceptron network for classification task.
+### 🔍 Example: Training an MLP Classifier with Genetic Algorithm
+
+In this tutorial, we will use Genetic Algorithm to train Multi-Layer Perceptron network for classification task.
 For more complex examples and use cases, please check the folder [examples](examples).
 
 ```python
@@ -144,14 +149,15 @@ print(model.score(X_test_scaled, y_test))
 print(model.evaluate(y_true=y_test, y_pred=y_pred, list_metrics=["AS", "PS", "RS", "F2S", "CKS", "FBS"]))
 ```
 
+## 💬 Support
 
-# Support (questions, problems)
+- 📦 [Source Code](https://github.com/thieu1995/MetaPerceptron)
+- 📖 [Documentation](https://metaperceptron.readthedocs.io/)
+- ⬇️ [PyPI Releases](https://pypi.org/project/metaperceptron/)
+- ❗ [Report Issues](https://github.com/thieu1995/MetaPerceptron/issues)
+- 📝 [Changelog](https://github.com/thieu1995/MetaPerceptron/blob/master/ChangeLog.md)
+- 💬 [Chat Group](https://t.me/+fRVCJGuGJg1mNDg1)
 
-### Official Links 
+---
 
-* Official source code repo: [link](https://github.com/thieu1995/MetaPerceptron)
-* Official document: [link](https://metapeceptron.readthedocs.io/)
-* Download releases: [link](https://pypi.org/project/metaperceptron/)
-* Issue tracker: [link](https://github.com/thieu1995/MetaPerceptron/issues)
-* Notable changes log: [link](https://github.com/thieu1995/MetaPerceptron/blob/master/ChangeLog.md)
-* Official chat group: [link](https://t.me/+fRVCJGuGJg1mNDg1)
+Developed by: [Thieu](mailto:nguyenthieu2102@gmail.com?Subject=MetaPerceptron_QUESTIONS) @ 2025
