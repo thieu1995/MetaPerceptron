@@ -1,4 +1,16 @@
 
+# Version 2.1.0
+
++ Fix bug name of optimizer in `MhaMlp` models
++ Fix bug encoding labels data in `Data` class
++ Add GPU support for Gradient Descent-trained MLP models
++ Rename `optim_paras` to `optim_params` in all models.
++ Fix bug in `validator` module
++ Fix bug missing loss_train in Gradient Descent-trained MLP models
++ Update examples, tests, documents, citations, and readme.
+
+----------------------------------------------------------------------------------------
+
 # Version 2.0.0
 
 + Re-structure and re-implement the MLP, Metaheuristic-trained MLP, and Gradient Descent-trained MLP.
