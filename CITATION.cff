@@ -5,7 +5,7 @@ authors:
     given-names: "Nguyen"
     orcid: "https://orcid.org/0000-0001-9994-8747"
 title: "MetaPerceptron: A Standardized Framework for Metaheuristic-Trained Multi-Layer Perceptron"
-version: v2.0.0
+version: v2.1.0
 doi: 10.5281/zenodo.10251021
 date-released: 2023-12-02
 url: "https://github.com/thieu1995/MetaPerceptron"
