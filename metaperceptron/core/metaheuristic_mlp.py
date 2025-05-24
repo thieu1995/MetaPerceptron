@@ -42,7 +42,7 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
     optim : str
         The optimization algorithm to use (default is "BaseGA").
 
-    optim_paras : dict
+    optim_params : dict
         Parameters for the optimizer (default is None).
 
     obj_name : str, optional
@@ -56,12 +56,12 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
     """
 
     def __init__(self, hidden_layers=(100,), act_names="ReLU", dropout_rates=0.2, act_output=None,
-                 optim="BaseGA", optim_paras=None, obj_name="F1S", seed=42, verbose=True):
+                 optim="BaseGA", optim_params=None, obj_name="F1S", seed=42, verbose=True):
         """
         Initializes the MhaMlpClassifier with specified parameters.
         """
         super().__init__(hidden_layers, act_names, dropout_rates, act_output,
-                         optim, optim_paras, obj_name, seed, verbose)
+                         optim, optim_params, obj_name, seed, verbose)
         self.classes_ = None  # Initialize classes to None
         self.metric_class = ClassificationMetric  # Set the metric class for evaluation
 
@@ -213,7 +213,7 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
         results : dict
             A dictionary containing the results of the requested metrics.
         """
-        return self._BaseMlp__evaluate_cls(y_true, y_pred, list_metrics)  # Call evaluation method
+        return self._evaluate_cls(y_true, y_pred, list_metrics)  # Call evaluation method
 
 
 class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
@@ -238,7 +238,7 @@ class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
         Activation function for the output layer (default is None).
     optim : str
         The optimization algorithm to use (default is "BaseGA").
-    optim_paras : dict
+    optim_params : dict
         Parameters for the optimizer (default is None).
     obj_name : str, optional
         The objective name for the optimization (default is "MSE").
@@ -249,12 +249,12 @@ class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
     """
 
     def __init__(self, hidden_layers=(100,), act_names="ELU", dropout_rates=0.2, act_output=None,
-                 optim="BaseGA", optim_paras=None, obj_name="MSE", seed=42, verbose=True):
+                 optim="BaseGA", optim_params=None, obj_name="MSE", seed=42, verbose=True):
         """
         Initializes the MhaMlpRegressor with specified parameters.
         """
         super().__init__(hidden_layers, act_names, dropout_rates, act_output,
-                         optim, optim_paras, obj_name, seed, verbose)
+                         optim, optim_params, obj_name, seed, verbose)
         self.metric_class = RegressionMetric  # Set the metric class for evaluation
 
     def fit(self, X, y, lb=(-1.0,), ub=(1.0,), mode='single', n_workers=None,
@@ -369,4 +369,4 @@ class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
         results : dict
             A dictionary containing the results of the requested metrics.
         """
-        return self._BaseMlp__evaluate_reg(y_true, y_pred, list_metrics)  # Call evaluation method
+        return self._evaluate_reg(y_true, y_pred, list_metrics)  # Call evaluation method
