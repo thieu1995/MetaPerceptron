@@ -8,7 +8,7 @@ from sklearn.datasets import load_iris, load_breast_cancer, load_diabetes, make_
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
-from metaperceptron import MlpClassifier, MlpRegressor, MhaMlpClassifier, MhaMlpRegressor
+from metaperceptron import MhaMlpClassifier, MhaMlpRegressor
 
 
 def check_MhaMlpClassifier_multi_class():
@@ -26,7 +26,7 @@ def check_MhaMlpClassifier_multi_class():
     X_test = scaler.transform(X_test)
 
     model = MhaMlpClassifier(hidden_layers=(100, ), act_names="ELU", dropout_rates=None, act_output=None,
-                           optim="BaseGA", optim_paras=None, obj_name="F1S", seed=42, verbose=True)
+                           optim="BaseGA", optim_params=None, obj_name="F1S", seed=42, verbose=True)
     # print(model.SUPPORTED_CLS_OBJECTIVES)
 
     model.fit(X_train, y_train, mode="swarm", n_workers=6)
@@ -56,7 +56,7 @@ def check_MhaMlpClassifier_multi_class_gridsearch():
         'act_names': ["ReLU", "Tanh", "Sigmoid"],
         'dropout_rates': [0.2, 0.3, None],
         'optim': ['BaseGA', 'OriginalWOA'],
-        "optim_paras": [
+        "optim_params": [
             {"epoch": 10, "pop_size": 30 },
             {"epoch": 20, "pop_size": 30 },
         ],
@@ -95,7 +95,7 @@ def check_MhaMlpClassifier_binary_class():
     X_test = scaler.transform(X_test)
 
     model = MhaMlpClassifier(hidden_layers=(100,), act_names="ELU", dropout_rates=0.2, act_output=None,
-                     optim="BaseGA", optim_paras=None, obj_name="F1S", seed=42, verbose=True)
+                     optim="BaseGA", optim_params=None, obj_name="F1S", seed=42, verbose=True)
     model.fit(X_train, y_train)
     res = model.score(X_test, y_test)
     print(res)
@@ -122,7 +122,7 @@ def check_MhaMlpClassifier_binary_class_gridsearch():
         'act_names': ["ReLU", "Tanh", "Sigmoid"],
         'dropout_rates': [0.2, None],
         'optim': ['BaseGA', 'OriginalWOA'],
-        "optim_paras": [
+        "optim_params": [
             {"epoch": 10, "pop_size": 30 },
             {"epoch": 20, "pop_size": 30 },
         ],
@@ -165,7 +165,7 @@ def check_MhaMlpRegressor_single_output():
     y_test = y_scaler.transform(y_test.reshape(-1, 1))
 
     model = MhaMlpRegressor(hidden_layers=(30, 15,), act_names="ELU", dropout_rates=0.2, act_output=None,
-                     optim="BaseGA", optim_paras=None, obj_name="MSE", seed=42, verbose=True)
+                     optim="BaseGA", optim_params=None, obj_name="MSE", seed=42, verbose=True)
     model.fit(X_train, y_train)
     res = model.score(X_test, y_test)
     print(res)
@@ -196,7 +196,7 @@ def check_MhaMlpRegressor_single_output_gridsearch():
         'act_names': ["ELU", "Tanh", "Sigmoid"],
         'dropout_rates': [0.2, None],
         'optim': ['BaseGA', 'OriginalWOA'],
-        "optim_paras": [
+        "optim_params": [
             {"epoch": 10, "pop_size": 30},
             {"epoch": 20, "pop_size": 30},
         ],
@@ -238,7 +238,7 @@ def check_MhaMlpRegressor_multi_output():
     y_test = y_scaler.transform(y_test)
 
     model = MhaMlpRegressor(hidden_layers=(30, 15,), act_names="ELU", dropout_rates=0.2, act_output=None,
-                     optim="BaseGA", optim_paras=None, obj_name="MSE", seed=42, verbose=True)
+                     optim="BaseGA", optim_params=None, obj_name="MSE", seed=42, verbose=True)
     model.fit(X_train, y_train)
     res = model.score(X_test, y_test)
     print(res)
@@ -267,7 +267,7 @@ def check_MhaMlpRegressor_multi_output_gridsearch():
         'act_names': ["ELU", "Tanh", "Sigmoid"],
         'dropout_rates': [0.2, None],
         'optim': ['BaseGA', 'OriginalWOA'],
-        "optim_paras": [
+        "optim_params": [
             {"epoch": 10, "pop_size": 30},
             {"epoch": 20, "pop_size": 30},
         ],

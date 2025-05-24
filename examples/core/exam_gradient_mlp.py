@@ -26,9 +26,9 @@ def check_MlpClassifier_multi_class():
     X_test = scaler.transform(X_test)
 
     model = MlpClassifier(hidden_layers=(100, ), act_names="ReLU", dropout_rates=None, act_output=None,
-                 epochs=10, batch_size=16, optim="Adam", optim_paras=None,
+                 epochs=10, batch_size=16, optim="Adam", optim_params=None,
                  early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
-                 seed=42, verbose=True)
+                 seed=42, verbose=True, device="cpu")
     model.fit(X_train, y_train)
     res = model.score(X_test, y_test)
     print(res)
@@ -94,9 +94,9 @@ def check_MlpClassifier_binary_class():
     X_test = scaler.transform(X_test)
 
     model = MlpClassifier(hidden_layers=(100, 50), act_names="ReLU", dropout_rates=0.2, act_output=None,
-                 epochs=50, batch_size=8, optim="Adam", optim_paras=None,
+                 epochs=50, batch_size=8, optim="Adam", optim_params=None,
                  early_stopping=True, n_patience=5, epsilon=0.0, valid_rate=0.1,
-                 seed=42, verbose=True)
+                 seed=42, verbose=True, device="cpu")
     model.fit(X_train, y_train)
     res = model.score(X_test, y_test)
     print(res)
@@ -165,9 +165,9 @@ def check_MlpRegressor_single_output():
     y_test = y_scaler.transform(y_test.reshape(-1, 1))
 
     model = MlpRegressor(hidden_layers=(30, 15), act_names="ELU", dropout_rates=0.2, act_output=None,
-                 epochs=50, batch_size=8, optim="Adam", optim_paras=None,
+                 epochs=50, batch_size=8, optim="Adam", optim_params=None,
                  early_stopping=True, n_patience=5, epsilon=0.0, valid_rate=0.1,
-                 seed=42, verbose=True)
+                 seed=42, verbose=True, device="cpu")
     model.fit(X_train, y_train)
     res = model.score(X_test, y_test)
     print(res)
@@ -239,9 +239,9 @@ def check_MlpRegressor_multi_output():
     y_test = y_scaler.transform(y_test)
 
     model = MlpRegressor(hidden_layers=(30, 15), act_names="ELU", dropout_rates=0.2, act_output=None,
-                 epochs=50, batch_size=8, optim="Adam", optim_paras=None,
+                 epochs=50, batch_size=8, optim="Adam", optim_params=None,
                  early_stopping=True, n_patience=5, epsilon=0.0, valid_rate=0.1,
-                 seed=42, verbose=True)
+                 seed=42, verbose=True, device="cpu")
     model.fit(X_train, y_train)
     res = model.score(X_test, y_test)
     print(res)
