@@ -4,8 +4,8 @@
 #       Github: https://github.com/thieu1995        %                         
 # --------------------------------------------------%
 
-from metaperceptron import Data, MlpClassifier
 from sklearn.datasets import load_breast_cancer
+from metaperceptron import Data, MlpClassifier
 
 
 ## Load data object
@@ -27,9 +27,9 @@ print(type(data.X_train), type(data.y_train))
 
 ## Create model
 model = MlpClassifier(hidden_layers=(30,), act_names="ReLU", dropout_rates=None, act_output=None,
-                    epochs=10, batch_size=16, optim="Adam", optim_paras=None,
+                    epochs=10, batch_size=16, optim="Adam", optim_params=None,
                     early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
-                    seed=42, verbose=True)
+                    seed=42, verbose=True, device="cpu")
 ## Train the model
 model.fit(X=data.X_train, y=data.y_train)
 
