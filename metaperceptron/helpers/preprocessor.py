@@ -82,6 +82,7 @@ class LabelEncoder:
         encoded_labels : array-like
             Encoded integer labels.
         """
+        y = np.ravel(y)
         if self.unique_labels is None:
             raise ValueError("Label encoder has not been fit yet.")
         return np.array([self.label_to_index[label] for label in y])
