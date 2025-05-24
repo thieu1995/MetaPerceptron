@@ -1,7 +1,9 @@
 Function in model object
 ========================
 
-After you define model, here are several functions you can call in model object::
+After you define model, here are several functions you can call in model object.
+
+.. code-block:: python
 
     from metaperceptron import MhaMlpRegressor, Data
 

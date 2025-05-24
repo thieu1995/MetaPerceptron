@@ -6,7 +6,9 @@ Data class
 + You can scale dataset without using `DataTransformer` class
 + You can scale labels using `LabelEncoder`
 
-For example::
+For example.
+
+.. code-block:: python
 
     from metaperceptron import Data
     import pandas as pd

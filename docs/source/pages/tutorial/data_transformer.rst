@@ -3,7 +3,9 @@ DataTransformer class
 
 We provide many scaler classes that you can select and make a combination of transforming your data via DataTransformer class. For example:
 
-* You want to scale data by `Loge` and then `Sqrt` and then `MinMax`::
+* You want to scale data by `Loge` and then `Sqrt` and then `MinMax`.
+
+.. code-block:: python
 
     from metaperceptron import DataTransformer
     import pandas as pd
@@ -19,7 +21,9 @@ We provide many scaler classes that you can select and make a combination of tra
     X_test_scaled = dt.transform(X_test)
 
 
-* I want to scale data by `YeoJohnson` and then `Standard`::
+* I want to scale data by `YeoJohnson` and then `Standard`.
+
+.. code-block:: python
 
     from metaperceptron import DataTransformer
     import pandas as pd

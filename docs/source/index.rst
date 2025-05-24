@@ -6,7 +6,7 @@
 Welcome to MetaPerceptron's documentation!
 ==========================================
 
-.. image:: https://img.shields.io/badge/release-2.0.0-yellow.svg
+.. image:: https://img.shields.io/badge/release-2.1.0-yellow.svg
    :target: https://github.com/thieu1995/MetaPerceptron/releases
 
 .. image:: https://img.shields.io/pypi/wheel/gensim.svg
@@ -66,6 +66,7 @@ you can perform searches and hyperparameter tuning using the features provided b
 * **Total Gradient Descent-based MLP Regressor**: 12 Models
 * **Total Gradient Descent-based MLP Classifier**: 12 Models
 * **Supported performance metrics**: >= 67 (47 regressions and 20 classifications)
+* **Supported utility functions**: GPU for Gradient-based models, Scikit-learn compatibility, and more
 * **Documentation:** https://metaperceptron.readthedocs.io
 * **Python versions:** >= 3.8.x
 * **Dependencies:** numpy, scipy, scikit-learn, pytorch, mealpy, pandas, permetrics.

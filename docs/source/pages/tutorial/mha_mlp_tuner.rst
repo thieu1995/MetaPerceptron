@@ -1,7 +1,10 @@
 MhaMlpTuner class
 =================
 
-In this example, we use Genetic Algorithm-trained MLP network for Breast Cancer classification dataset. We tune several hyper-paramaters of both network structure and optimizer's parameters.::
+In this example, we use Genetic Algorithm-trained MLP network for Breast Cancer classification dataset.
+We tune several hyper-paramaters of both network structure and optimizer's parameters.
+
+.. code-block:: python
 
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
@@ -26,7 +29,7 @@ In this example, we use Genetic Algorithm-trained MLP network for Breast Cancer 
         'act_names': ['Tanh', 'ELU'],
         'dropout_rates': [0.2, None],
         'optim': ['BaseGA'],
-        'optim_paras': [
+        'optim_params': [
             {"epoch": 10, "pop_size": 20},
             {"epoch": 20, "pop_size": 20},
         ],

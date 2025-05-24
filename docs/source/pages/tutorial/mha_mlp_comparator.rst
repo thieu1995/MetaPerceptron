@@ -1,7 +1,9 @@
 MhaMlpComparator
 ================
 
-In this example, we will use Iris classification dataset. We compare 3 models includes `GA-MLP`, `PSO-MLP`, and `WOA-MLP`.::
+In this example, we will use Iris classification dataset. We compare 3 models includes `GA-MLP`, `PSO-MLP`, and `WOA-MLP`.
+
+.. code-block:: python
 
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
