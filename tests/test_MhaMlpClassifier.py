@@ -27,7 +27,7 @@ def classifier():
         act_names="ReLU",
         dropout_rates=0.2,
         optim="BaseGA",
-        optim_paras={"epoch": 10, "pop_size": 20},
+        optim_params={"epoch": 10, "pop_size": 20},
         seed=42,
         verbose=False
     )

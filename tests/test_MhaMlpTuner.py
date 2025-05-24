@@ -28,7 +28,7 @@ def param_dict():
         'act_names': ['Tanh', 'ELU'],
         'dropout_rates': [None],
         'optim': ['BaseGA'],
-        'optim_paras': [
+        'optim_params': [
             {"epoch": 10, "pop_size": 20},
             {"epoch": 20, "pop_size": 20},
         ],

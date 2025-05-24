@@ -36,12 +36,12 @@ def test_initialization(create_mlp_classifier):
     assert clf.seed == 42
 
 
-def test_process_data(create_mlp_classifier, generate_data):
+def test__process_data(create_mlp_classifier, generate_data):
     """Test data processing method with validation split."""
     clf = create_mlp_classifier
     X, y = generate_data
 
-    train_loader, X_valid_tensor, y_valid_tensor = clf.process_data(X, y)
+    train_loader, X_valid_tensor, y_valid_tensor = clf._process_data(X, y)
     assert train_loader is not None
     assert X_valid_tensor is not None
     assert y_valid_tensor is not None

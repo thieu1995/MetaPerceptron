@@ -29,9 +29,9 @@ def test_initialization(model):
     assert model.verbose is False
 
 
-def test_process_data(model):
+def test__process_data(model):
     """Test the data processing and tensor conversion."""
-    train_loader, X_valid_tensor, y_valid_tensor = model.process_data(X, y)
+    train_loader, X_valid_tensor, y_valid_tensor = model._process_data(X, y)
 
     # Check the training loader data format
     for batch_X, batch_y in train_loader:
