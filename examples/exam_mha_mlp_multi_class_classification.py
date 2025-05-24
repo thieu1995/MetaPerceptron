@@ -4,8 +4,8 @@
 #       Github: https://github.com/thieu1995        %                         
 # --------------------------------------------------%
 
-from metaperceptron import Data, MhaMlpClassifier
 from sklearn.datasets import load_iris
+from metaperceptron import Data, MhaMlpClassifier
 
 
 ## Load data object
@@ -26,7 +26,7 @@ data.y_test = scaler_y.transform(data.y_test)
 ## Create model
 opt_paras = {"name": "WOA", "epoch": 100, "pop_size": 20}
 model = MhaMlpClassifier(hidden_layers=(50,), act_names="Tanh", dropout_rates=None, act_output=None,
-                       optim="BaseGA", optim_paras=opt_paras, obj_name="F1S", seed=42, verbose=True)
+                       optim="BaseGA", optim_params=opt_paras, obj_name="F1S", seed=42, verbose=True)
 ## Train the model
 model.fit(X=data.X_train, y=data.y_train, lb=-1., ub=1.0)
 

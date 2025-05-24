@@ -4,8 +4,8 @@
 #       Github: https://github.com/thieu1995        %                         
 # --------------------------------------------------%
 
-from metaperceptron import Data, MhaMlpClassifier
 from sklearn.datasets import load_breast_cancer
+from metaperceptron import Data, MhaMlpClassifier
 
 
 ## Load data object
@@ -28,7 +28,7 @@ opt_paras = {"name": "WOA", "epoch": 100, "pop_size": 30}
 print(MhaMlpClassifier.SUPPORTED_CLS_OBJECTIVES)
 
 model = MhaMlpClassifier(hidden_layers=(100,), act_names="ELU", dropout_rates=None, act_output=None,
-                       optim="BaseGA", optim_paras=opt_paras, obj_name="F1S", seed=42, verbose=True)
+                       optim="BaseGA", optim_params=opt_paras, obj_name="F1S", seed=42, verbose=True)
 ## Train the model
 model.fit(X=data.X_train, y=data.y_train)
 
