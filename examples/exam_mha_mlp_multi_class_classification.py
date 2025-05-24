@@ -24,9 +24,10 @@ data.y_train, scaler_y = data.encode_label(data.y_train)
 data.y_test = scaler_y.transform(data.y_test)
 
 ## Create model
-opt_paras = {"name": "WOA", "epoch": 100, "pop_size": 20}
-model = MhaMlpClassifier(hidden_layers=(50,), act_names="Tanh", dropout_rates=None, act_output=None,
-                       optim="BaseGA", optim_params=opt_paras, obj_name="F1S", seed=42, verbose=True)
+model = MhaMlpClassifier(hidden_layers=(50,), act_names="Tanh",
+                         dropout_rates=None, act_output=None,
+                         optim="BaseGA", optim_params={"name": "WOA", "epoch": 100, "pop_size": 20},
+                         obj_name="F1S", seed=42, verbose=True)
 ## Train the model
 model.fit(X=data.X_train, y=data.y_train, lb=-1., ub=1.0)
 
