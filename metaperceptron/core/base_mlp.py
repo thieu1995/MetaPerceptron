@@ -868,7 +868,9 @@ class BaseMhaMlp(BaseMlp):
                 return opt_class(epoch=300, pop_size=30)
         elif isinstance(optim, Optimizer):
             if isinstance(optim_params, dict):
-                return optim.set_parameters(optim_params)
+                if "name" in optim_params:  # Check if key exists and remove it
+                    optim.name = optim_params.pop("name")
+                optim.set_parameters(optim_params)
             return optim
         else:
             raise TypeError(f"optimizer needs to set as a string and supported by Mealpy library.")
