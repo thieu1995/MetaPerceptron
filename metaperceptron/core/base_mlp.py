@@ -5,8 +5,10 @@
 # --------------------------------------------------%
 
 from typing import TypeVar
-import numpy as np
+import inspect
 import pickle
+import pprint
+import numpy as np
 import pandas as pd
 from pathlib import Path
 import torch
@@ -273,7 +275,19 @@ class BaseMlp(BaseEstimator):
         self.seed = seed
         self.network = None
         self.loss_train = None
+    
+    def __repr__(self, **kwargs):
+        """Pretty-print parameters like scikit-learn's Estimator."""
+        param_order = list(inspect.signature(self.__init__).parameters.keys())
+        param_dict = {k: getattr(self, k) for k in param_order}
 
+        param_str = ", ".join(f"{k}={repr(v)}" for k, v in param_dict.items())
+        if len(param_str) <= 80:
+            return f"{self.__class__.__name__}({param_str})"
+        else:
+            formatted_params = ",\n  ".join(f"{k}={pprint.pformat(v)}" for k, v in param_dict.items())
+            return f"{self.__class__.__name__}(\n  {formatted_params}\n)"
+        
     @staticmethod
     def _check_method(method=None, list_supported_methods=None):
         """
@@ -358,7 +372,7 @@ class BaseMlp(BaseEstimator):
         """
         pass
 
-    def __evaluate_reg(self, y_true, y_pred, list_metrics=("MSE", "MAE")):
+    def _evaluate_reg(self, y_true, y_pred, list_metrics=("MSE", "MAE")):
         """
         Evaluate regression performance metrics.
 
@@ -379,7 +393,7 @@ class BaseMlp(BaseEstimator):
         rm = RegressionMetric(y_true=y_true, y_pred=y_pred)
         return rm.get_metrics_by_list_names(list_metrics)
 
-    def __evaluate_cls(self, y_true, y_pred, list_metrics=("AS", "RS")):
+    def _evaluate_cls(self, y_true, y_pred, list_metrics=("AS", "RS")):
         """
         Evaluate classification performance metrics.
 
@@ -553,7 +567,7 @@ class BaseStandardMlp(BaseMlp):
     optim : str
         Name of the optimizer to use from SUPPORTED_OPTIMIZERS.
 
-    optim_paras : dict, optional
+    optim_params : dict, optional
         Additional parameters for the optimizer.
 
     early_stopping : bool
@@ -573,6 +587,9 @@ class BaseStandardMlp(BaseMlp):
 
     verbose : bool
         If True, outputs training progress.
+        
+    device : str
+        Device to run the model on (e.g., "cpu" or "gpu").
     """
 
     SUPPORTED_OPTIMIZERS = [
@@ -582,9 +599,9 @@ class BaseStandardMlp(BaseMlp):
     ]
 
     def __init__(self, hidden_layers=(100,), act_names="ReLU", dropout_rates=0.2, act_output=None,
-                 epochs=1000, batch_size=16, optim="Adam", optim_paras=None,
+                 epochs=1000, batch_size=16, optim="Adam", optim_params=None,
                  early_stopping=True, n_patience=10, epsilon=0.001, valid_rate=0.1,
-                 seed=42, verbose=True):
+                 seed=42, verbose=True, device=None):
         """
         Initialize the MLP with user-defined architecture, training parameters, and optimization settings.
         """
@@ -592,12 +609,21 @@ class BaseStandardMlp(BaseMlp):
         self.epochs = epochs
         self.batch_size = batch_size
         self.optim = optim
-        self.optim_paras = optim_paras if optim_paras else {}
+        self.optim_params = optim_params
+        if optim_params is None:
+            self.optim_params = {}
         self.early_stopping = early_stopping
         self.n_patience = n_patience
         self.epsilon = epsilon
         self.valid_rate = valid_rate
         self.verbose = verbose
+        if device == 'gpu':
+            if torch.cuda.is_available():
+                self.device = 'cuda'
+            else:
+                raise ValueError("GPU is not available. Please set device to 'cpu'.")
+        else:
+            self.device = "cpu"
 
         # Internal attributes for model, optimizer, and early stopping
         self.size_input = None
@@ -622,8 +648,8 @@ class BaseStandardMlp(BaseMlp):
 
         # Define model, optimizer, and loss criterion based on task
         self.network = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
-                               self.dropout_rates, self.task, self.act_output, self.seed)
-        self.optimizer = getattr(torch.optim, self.optim)(self.network.parameters(), **self.optim_paras)
+                               self.dropout_rates, self.task, self.act_output, self.seed).to(self.device)
+        self.optimizer = getattr(torch.optim, self.optim)(self.network.parameters(), **self.optim_params)
 
         # Select loss function based on task type
         if self.task == "classification":
@@ -633,7 +659,7 @@ class BaseStandardMlp(BaseMlp):
         else:
             self.criterion = nn.MSELoss()
 
-    def process_data(self, X, y, **kwargs):
+    def _process_data(self, X, y, **kwargs):
         """
         Process and prepare data for training.
 
@@ -663,8 +689,10 @@ class BaseStandardMlp(BaseMlp):
         train_loader, X_valid_tensor, y_valid_tensor = data
 
         # Start training
-        self.network.train()  # Set model to training mode
+        self.loss_train = []
         for epoch in range(self.epochs):
+            self.network.train()  # Set model to training mode
+
             # Initialize total loss for this epoch
             total_loss = 0.0
 
@@ -684,6 +712,7 @@ class BaseStandardMlp(BaseMlp):
 
             # Calculate average training loss for this epoch
             avg_loss = total_loss / len(train_loader)
+            self.loss_train.append(avg_loss)
 
             # Perform validation if validation mode is enabled
             if self.valid_mode:
@@ -705,9 +734,6 @@ class BaseStandardMlp(BaseMlp):
                     break
                 if self.verbose:
                     print(f"Epoch: {epoch + 1}, Train Loss: {avg_loss:.4f}")
-
-            # Return to training mode for next epoch
-            self.network.train()
 
 
 class BaseMhaMlp(BaseMlp):
@@ -744,7 +770,7 @@ class BaseMhaMlp(BaseMlp):
     optim : str
         Name of the optimization algorithm to be used.
 
-    optim_paras : dict, optional
+    optim_params : dict, optional
         Parameters for the optimizer (default is None).
 
     obj_name : str, optional
@@ -758,10 +784,10 @@ class BaseMhaMlp(BaseMlp):
 
     Methods
     -------
-    __init__(hidden_layers, act_names, dropout_rates, act_output, optim, optim_paras, obj_name, seed, verbose):
+    __init__(hidden_layers, act_names, dropout_rates, act_output, optim, optim_params, obj_name, seed, verbose):
         Initializes the model parameters and configuration.
 
-    _set_optimizer(optim, optim_paras):
+    _set_optimizer(optim, optim_params):
         Sets the optimizer based on the provided name or instance.
 
     build_model():
@@ -782,13 +808,13 @@ class BaseMhaMlp(BaseMlp):
     SUPPORTED_REG_OBJECTIVES = get_all_regression_metrics()
 
     def __init__(self, hidden_layers=(100,), act_names="ELU", dropout_rates=0.2, act_output=None,
-                 optim="BaseGA", optim_paras=None, obj_name=None, seed=42, verbose=True):
+                 optim="BaseGA", optim_params=None, obj_name=None, seed=42, verbose=True):
         """
         Initializes the BaseMhaMlp class.
         """
         super().__init__(hidden_layers, act_names, dropout_rates, "classification", act_output, seed=seed)
         self.optim = optim
-        self.optim_paras = optim_paras
+        self.optim_params = optim_params
         self.verbose = verbose
 
         # Initialize model parameters
@@ -799,21 +825,21 @@ class BaseMhaMlp(BaseMlp):
         self.obj_name = obj_name
         self.metric_class = None
 
-    def set_optim_and_paras(self, optim=None, optim_paras=None):
+    def set_optim_and_paras(self, optim=None, optim_params=None):
         """
-        Sets the `optim` and `optim_paras` parameters for this class.
+        Sets the `optim` and `optim_params` parameters for this class.
 
         Parameters
         ----------
         optim : str
             The optimizer name to be set.
-        optim_paras : dict
+        optim_params : dict
             Parameters to configure the optimizer.
         """
         self.optim = optim
-        self.optim_paras = optim_paras
+        self.optim_params = optim_params
 
-    def _set_optimizer(self, optim=None, optim_paras=None):
+    def _set_optimizer(self, optim=None, optim_params=None):
         """
         Validates the real optimizer based on the provided `optim` and `optim_pras`.
 
@@ -821,7 +847,7 @@ class BaseMhaMlp(BaseMlp):
         ----------
         optim : str or Optimizer
             The optimizer name or instance to be set.
-        optim_paras : dict, optional
+        optim_params : dict, optional
             Parameters to configure the optimizer.
 
         Returns
@@ -836,13 +862,13 @@ class BaseMhaMlp(BaseMlp):
         """
         if isinstance(optim, str):
             opt_class = get_optimizer_by_name(optim)
-            if isinstance(optim_paras, dict):
-                return opt_class(**optim_paras)
+            if isinstance(optim_params, dict):
+                return opt_class(**optim_params)
             else:
                 return opt_class(epoch=300, pop_size=30)
         elif isinstance(optim, Optimizer):
-            if isinstance(optim_paras, dict):
-                return optim.set_parameters(optim_paras)
+            if isinstance(optim_params, dict):
+                return optim.set_parameters(optim_params)
             return optim
         else:
             raise TypeError(f"optimizer needs to set as a string and supported by Mealpy library.")
@@ -854,17 +880,17 @@ class BaseMhaMlp(BaseMlp):
         Returns:
             str: A string representing the name of the model, including details
             about the optimizer used. If `self.optim` is a string, the name
-            will be formatted as "<self.optim_paras>-MLP". Otherwise, it will
+            will be formatted as "<self.optim_params>-MLP". Otherwise, it will
             return "<self.optimizer.name>-MLP", assuming `self.optimizer` is an
             object with a `name` attribute.
 
         Notes:
-            - This method relies on the presence of `self.optim`, `self.optim_paras`,
+            - This method relies on the presence of `self.optim`, `self.optim_params`,
               and `self.optimizer.name` attributes within the model instance.
             - It is intended to provide a consistent naming scheme for model instances
               based on the optimizer configuration.
         """
-        return f"{self.optimizer.name}-MLP-{self.optim_paras}"
+        return f"{self.optimizer.name}-MLP-{self.optim_params}"
 
     def build_model(self):
         """
@@ -878,7 +904,7 @@ class BaseMhaMlp(BaseMlp):
         self.network = CustomMLP(self.size_input, self.size_output, self.hidden_layers, self.act_names,
                                self.dropout_rates, self.task, self.act_output)
 
-        self.optimizer = self._set_optimizer(self.optim, self.optim_paras)
+        self.optimizer = self._set_optimizer(self.optim, self.optim_params)
 
     def _set_lb_ub(self, lb=None, ub=None, n_dims=None):
         """
