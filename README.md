@@ -6,7 +6,7 @@
 
 ---
 
-[![GitHub release](https://img.shields.io/badge/release-2.0.0-yellow.svg)](https://github.com/thieu1995/MetaPerceptron/releases)
+[![GitHub release](https://img.shields.io/badge/release-2.1.0-yellow.svg)](https://github.com/thieu1995/MetaPerceptron/releases)
 [![Wheel](https://img.shields.io/pypi/wheel/gensim.svg)](https://pypi.python.org/pypi/metaperceptron) 
 [![PyPI version](https://badge.fury.io/py/metaperceptron.svg)](https://badge.fury.io/py/metaperceptron)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/metaperceptron.svg)
@@ -37,6 +37,7 @@ you can perform searches and hyperparameter tuning using the features provided b
 * **Total Gradient Descent-trained MLP Regressor**: 12 Models
 * **Total Gradient Descent-trained MLP Classifier**: 12 Models
 * **Supported performance metrics**: >= 67 (47 regressions and 20 classifications)
+* **Supported utility functions**: GPU for Gradient-based models, Scikit-learn compatibility, and more
 * **Documentation:** https://metaperceptron.readthedocs.io
 * **Python versions:** >= 3.8.x
 * **Dependencies:** numpy, scipy, scikit-learn, pytorch, mealpy, pandas, permetrics. 
@@ -86,7 +87,7 @@ Please include these citations if you plan to use this library:
 
 * Install the [current PyPI release](https://pypi.python.org/pypi/metaperceptron):
 ```sh
-$ pip install metaperceptron==2.0.0
+$ pip install metaperceptron
 ```
 
 * Check the version:
@@ -125,9 +126,10 @@ X_train_scaled = dt.fit_transform(X_train)
 X_test_scaled = dt.transform(X_test)
 
 ## Define Genetic Algorithm-trained Multi-Layer Perceptron
-opt_paras = {"epoch": 100, "pop_size": 20}
-model = MhaMlpClassifier(hidden_layers=(50, 15), act_names="Tanh", dropout_rates=None, act_output=None,
-                         optim="BaseGA", optim_paras=opt_paras, obj_name="F1S", seed=42, verbose=True)
+model = MhaMlpClassifier(hidden_layers=(50, 15), act_names="Tanh", 
+                         dropout_rates=None, act_output=None, 
+                         optim="BaseGA", optim_params={"epoch": 100, "pop_size": 20, "name": "GA"}, 
+                         obj_name="F1S", seed=42, verbose=True)
 ## Train the model
 model.fit(X=X_train_scaled, y=y_train)
 
