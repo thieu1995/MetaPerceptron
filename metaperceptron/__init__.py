@@ -4,7 +4,7 @@
 #       Github: https://github.com/thieu1995        %                         
 # --------------------------------------------------%
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 from metaperceptron.helpers.preprocessor import Data, DataTransformer
 from metaperceptron.core.gradient_mlp import MlpClassifier, MlpRegressor
