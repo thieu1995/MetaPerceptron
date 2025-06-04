@@ -1,4 +1,12 @@
 
+# Version 2.2.0
+
++ Update latest version of dependencies `mealpy` to 3.0.2 and `permetrics` to 2.0.0
++ Update init() in `MhaMlpRegressor`, `MhaMlpClassifier`, and `MhaMlpComparator` classes.
++ Update workflows, examples, tests, documents, citations, and readme.
+
+----------------------------------------------------------------------------------------
+
 # Version 2.1.0
 
 + Fix bug name of optimizer in `MhaMlp` models
