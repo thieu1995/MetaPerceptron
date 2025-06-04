@@ -40,6 +40,7 @@ In this example, we will use Iris classification dataset. We compare 3 models in
         obj_name="F1S",
         verbose=True,
         seed=42,
+        lb=None, ub=None, mode='single', n_workers=None, termination=None
     )
 
     ## Perform comparison

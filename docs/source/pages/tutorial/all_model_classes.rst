@@ -13,7 +13,8 @@ Here is how you define all of provided classes.
 
     opt_paras = {"epoch": 250, "pop_size": 30, "name": "GA"}
     model = MhaMlpRegressor(hidden_layers=(30, 15,), act_names="ELU", dropout_rates=0.2, act_output=None,
-                            optim="BaseGA", optim_params=opt_paras, obj_name="MSE", seed=42, verbose=True)
+                            optim="BaseGA", optim_params=opt_paras, obj_name="MSE", seed=42, verbose=True,
+                            lb=None, ub=None, mode='single', n_workers=None, termination=None)
 
 
     ## Use Metaheuristic Algorithm-trained MLP model for classification problem
@@ -22,7 +23,8 @@ Here is how you define all of provided classes.
 
     opt_paras = {"epoch": 250, "pop_size": 30, "name": "WOA"}
     model = MhaMlpClassifier(hidden_layers=(100, 20), act_names="ReLU", dropout_rates=None, act_output=None,
-                             optim="OriginalWOA", optim_params=opt_paras, obj_name="F1S", seed=42, verbose=True)
+                             optim="OriginalWOA", optim_params=opt_paras, obj_name="F1S", seed=42, verbose=True,
+                             lb=None, ub=None, mode='single', n_workers=None, termination=None)
 
 
     ## Use Gradient Descent-trained (Adam Optimizer) to train MLP model for regression problem
