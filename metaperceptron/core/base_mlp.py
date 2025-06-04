@@ -3,7 +3,7 @@
 #       Email: nguyenthieu2102@gmail.com            %
 #       Github: https://github.com/thieu1995        %
 # --------------------------------------------------%
-
+import numbers
 from typing import TypeVar
 import inspect
 import pickle
@@ -773,7 +773,7 @@ class BaseMhaMlp(BaseMlp):
     optim_params : dict, optional
         Parameters for the optimizer (default is None).
 
-    obj_name : str, optional
+    obj_name : str
         Objective name for the model evaluation (default is None).
 
     seed : int
@@ -782,9 +782,24 @@ class BaseMhaMlp(BaseMlp):
     verbose : bool
         Whether to print verbose output during training (default is True).
 
+    lb : int, float, tuple, list, np.ndarray, optional
+        Lower bounds for weights and biases in network.
+
+    ub : int, float, tuple, list, np.ndarray, optional
+        Upper bounds for weights and biases in network.
+
+    mode : str, optional
+        Mode for optimization (default is 'single').
+
+    n_workers : int, optional
+        Number of workers for parallel processing (default is None).
+
+    termination : any, optional
+        Termination criteria for optimization (default is None).
+
     Methods
     -------
-    __init__(hidden_layers, act_names, dropout_rates, act_output, optim, optim_params, obj_name, seed, verbose):
+    __init__(hidden_layers, act_names, dropout_rates, act_output, optim, optim_params, obj_name, seed, verbose, lb, ub, mode, n_workers, termination):
         Initializes the model parameters and configuration.
 
     _set_optimizer(optim, optim_params):
@@ -799,7 +814,7 @@ class BaseMhaMlp(BaseMlp):
     objective_function(solution):
         Evaluates the fitness function for the given solution.
 
-    _fit(data, lb, ub, mode, n_workers, termination, save_population, **kwargs):
+    _fit(X, y):
         Fits the model to the provided data using the optimizer.
     """
 
@@ -808,7 +823,8 @@ class BaseMhaMlp(BaseMlp):
     SUPPORTED_REG_OBJECTIVES = get_all_regression_metrics()
 
     def __init__(self, hidden_layers=(100,), act_names="ELU", dropout_rates=0.2, act_output=None,
-                 optim="BaseGA", optim_params=None, obj_name=None, seed=42, verbose=True):
+                 optim="BaseGA", optim_params=None, obj_name=None, seed=42, verbose=True,
+                 lb=None, ub=None, mode='single', n_workers=None, termination=None):
         """
         Initializes the BaseMhaMlp class.
         """
@@ -816,6 +832,11 @@ class BaseMhaMlp(BaseMlp):
         self.optim = optim
         self.optim_params = optim_params
         self.verbose = verbose
+        self.lb = lb
+        self.ub = ub
+        self.mode = mode
+        self.n_workers = n_workers
+        self.termination = termination
 
         # Initialize model parameters
         self.size_input = None
@@ -915,9 +936,9 @@ class BaseMhaMlp(BaseMlp):
         Parameters
         ----------
         lb : list, tuple, np.ndarray, int, or float, optional
-            The lower bounds.
+            The lower bounds for weights and biases in network.
         ub : list, tuple, np.ndarray, int, or float, optional
-            The upper bounds.
+            The upper bounds for weights and biases in network.
         n_dims : int
             The number of dimensions.
 
@@ -931,24 +952,30 @@ class BaseMhaMlp(BaseMlp):
         ValueError
             If the bounds are not valid.
         """
-        if isinstance(lb, (list, tuple, np.ndarray)) and isinstance(ub, (list, tuple, np.ndarray)):
-            if len(lb) == len(ub):
-                if len(lb) == 1:
-                    lb = np.array(lb * n_dims, dtype=float)
-                    ub = np.array(ub * n_dims, dtype=float)
-                    return lb, ub
-                elif len(lb) == n_dims:
-                    return lb, ub
-                else:
-                    raise ValueError(f"Invalid lb and ub. Their length should be equal to 1 or {n_dims}.")
+        if lb is None:
+            lb = (-1.,) * n_dims
+        elif isinstance(lb, numbers.Number):
+            lb = (lb, ) * n_dims
+        elif isinstance(lb, (list, tuple, np.ndarray)):
+            if len(lb) == 1:
+                lb = np.array(lb * n_dims, dtype=float)
             else:
-                raise ValueError(f"Invalid lb and ub. They should have the same length.")
-        elif isinstance(lb, (int, float)) and isinstance(ub, (int, float)):
-            lb = (float(lb),) * n_dims
-            ub = (float(ub),) * n_dims
-            return lb, ub
-        else:
-            raise ValueError(f"Invalid lb and ub. They should be a number of list/tuple/np.ndarray with size equal to {n_dims}")
+                lb = np.array(lb, dtype=float).ravel()
+
+        if ub is None:
+            ub = (-1.,) * n_dims
+        elif isinstance(ub, numbers.Number):
+            ub = (ub, ) * n_dims
+        elif isinstance(ub, (list, tuple, np.ndarray)):
+            if len(ub) == 1:
+                ub = np.array(ub * n_dims, dtype=float)
+            else:
+                ub = np.array(ub, dtype=float).ravel()
+
+        if len(lb) != len(ub):
+            raise ValueError(f"Invalid lb and ub. Their length should be equal to 1 or {n_dims}.")
+
+        return np.array(lb).ravel(), np.array(ub).ravel()
 
     def objective_function(self, solution=None):
         """
@@ -970,44 +997,25 @@ class BaseMhaMlp(BaseMlp):
         loss_train = self.metric_class(y_train, y_pred).get_metric_by_name(self.obj_name)[self.obj_name]
         return np.mean([loss_train])
 
-    def _fit(self, data, lb=(-1.0,), ub=(1.0,), mode='single', n_workers=None,
-             termination=None, save_population=False, **kwargs):
+    def _fit(self, X, y):
         """
         Fits the model to the provided data using the specified optimizer.
 
         Parameters
         ----------
-        data : tuple
-            Training data consisting of features and labels.
-        lb : tuple, optional
-            Lower bounds for the optimization (default is (-1.0,)).
-        ub : tuple, optional
-            Upper bounds for the optimization (default is (1.0,)).
-        mode : str, optional
-            Mode for optimization (default is 'single').
-        n_workers : int, optional
-            Number of workers for parallel processing (default is None).
-        termination : any, optional
-            Termination criteria for optimization (default is None).
-        save_population : bool, optional
-            Whether to save the population during optimization (default is False).
-        **kwargs : additional parameters
-            Additional parameters for the fitting process.
+        X : array-like, shape (n_samples, n_features)
+            Training data.
+        y : array-like, shape (n_samples,)
+            Target values.
 
         Returns
         -------
-        self : BaseMhaMlp
-            The instance of the fitted model.
-
-        Raises
-        ------
-        ValueError
-            If the objective name is None or not supported.
+        self : MhaMlpClassifier
+            Returns the instance of the fitted model.
         """
-        # Get data
         n_dims = self.network.get_weights_size()
-        lb, ub = self._set_lb_ub(lb, ub, n_dims)
-        self.data = data
+        lb, ub = self._set_lb_ub(self.lb, self.ub, n_dims)
+        self.data = (X, y)
 
         log_to = "console" if self.verbose else "None"
         if self.obj_name is None:
@@ -1024,12 +1032,8 @@ class BaseMhaMlp(BaseMlp):
             "bounds": FloatVar(lb=lb, ub=ub),
             "minmax": minmax,
             "log_to": log_to,
-            "save_population": save_population,
         }
-        if termination is None:
-            self.optimizer.solve(problem, mode=mode, n_workers=n_workers, seed=self.seed)
-        else:
-            self.optimizer.solve(problem, mode=mode, n_workers=n_workers, termination=termination, seed=self.seed)
+        self.optimizer.solve(problem, mode=self.mode, n_workers=self.n_workers, termination=self.termination, seed=self.seed)
         self.network.set_weights(self.optimizer.g_best.solution)
         self.loss_train = np.array(self.optimizer.history.list_global_best_fit)
         return self
