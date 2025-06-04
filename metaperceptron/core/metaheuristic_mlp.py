@@ -53,20 +53,36 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
 
     verbose : bool, optional
         Whether to print detailed logs during fitting (default is True).
+
+    lb : int, float, tuple, list, np.ndarray, optional
+        Lower bounds for weights and biases in network.
+
+    ub : int, float, tuple, list, np.ndarray, optional
+        Upper bounds for weights and biases in network.
+
+    mode : str, optional
+        Mode for optimization (default is 'single').
+
+    n_workers : int, optional
+        Number of workers for parallel processing (default is None).
+
+    termination : any, optional
+        Termination criteria for optimization (default is None).
     """
 
     def __init__(self, hidden_layers=(100,), act_names="ReLU", dropout_rates=0.2, act_output=None,
-                 optim="BaseGA", optim_params=None, obj_name="F1S", seed=42, verbose=True):
+                 optim="BaseGA", optim_params=None, obj_name="F1S", seed=42, verbose=True,
+                 lb=None, ub=None, mode='single', n_workers=None, termination=None):
         """
         Initializes the MhaMlpClassifier with specified parameters.
         """
         super().__init__(hidden_layers, act_names, dropout_rates, act_output,
-                         optim, optim_params, obj_name, seed, verbose)
+                         optim, optim_params, obj_name, seed, verbose,
+                         lb, ub, mode, n_workers, termination)
         self.classes_ = None  # Initialize classes to None
         self.metric_class = ClassificationMetric  # Set the metric class for evaluation
 
-    def fit(self, X, y, lb=(-1.0,), ub=(1.0,), mode='single', n_workers=None,
-            termination=None, save_population=False, **kwargs):
+    def fit(self, X, y):
         """
         Fits the model to the training data.
 
@@ -76,20 +92,6 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
             Training data.
         y : array-like, shape (n_samples,)
             Target values.
-        lb : tuple, optional
-            Lower bounds for optimization (default is (-1.0,)).
-        ub : tuple, optional
-            Upper bounds for optimization (default is (1.0,)).
-        mode : str, optional
-            Mode for optimization (default is 'single').
-        n_workers : int, optional
-            Number of workers for parallel processing (default is None).
-        termination : any, optional
-            Termination criteria for optimization (default is None).
-        save_population : bool, optional
-            Whether to save the population during optimization (default is False).
-        **kwargs : additional parameters
-            Additional parameters for fitting.
 
         Returns
         -------
@@ -116,7 +118,7 @@ class MhaMlpClassifier(BaseMhaMlp, ClassifierMixin):
         self.build_model()  # Build the model architecture
 
         ## Fit the data
-        self._fit((X_tensor, y), lb, ub, mode, n_workers, termination, save_population, **kwargs)  # Fit the model
+        self._fit(X_tensor, y)  # Fit the model
 
         return self  # Return the fitted model
 
@@ -246,19 +248,30 @@ class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
         Random seed for reproducibility (default is 42).
     verbose : bool, optional
         Whether to print detailed logs during fitting (default is True).
+    lb : int, float, tuple, list, np.ndarray, optional
+        Lower bounds for weights and biases in network.
+    ub : int, float, tuple, list, np.ndarray, optional
+        Upper bounds for weights and biases in network.
+    mode : str, optional
+        Mode for optimization (default is 'single').
+    n_workers : int, optional
+        Number of workers for parallel processing (default is None).
+    termination : any, optional
+        Termination criteria for optimization (default is None).
     """
 
     def __init__(self, hidden_layers=(100,), act_names="ELU", dropout_rates=0.2, act_output=None,
-                 optim="BaseGA", optim_params=None, obj_name="MSE", seed=42, verbose=True):
+                 optim="BaseGA", optim_params=None, obj_name="MSE", seed=42, verbose=True,
+                 lb=None, ub=None, mode='single', n_workers=None, termination=None):
         """
         Initializes the MhaMlpRegressor with specified parameters.
         """
         super().__init__(hidden_layers, act_names, dropout_rates, act_output,
-                         optim, optim_params, obj_name, seed, verbose)
+                         optim, optim_params, obj_name, seed, verbose,
+                         lb, ub, mode, n_workers, termination)
         self.metric_class = RegressionMetric  # Set the metric class for evaluation
 
-    def fit(self, X, y, lb=(-1.0,), ub=(1.0,), mode='single', n_workers=None,
-            termination=None, save_population=False, **kwargs):
+    def fit(self, X, y):
         """
         Fits the model to the training data.
 
@@ -268,20 +281,6 @@ class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
             Training data.
         y : array-like, shape (n_samples,) or (n_samples, n_outputs)
             Target values.
-        lb : tuple, optional
-            Lower bounds for optimization (default is (-1.0,)).
-        ub : tuple, optional
-            Upper bounds for optimization (default is (1.0,)).
-        mode : str, optional
-            Mode for optimization (default is 'single').
-        n_workers : int, optional
-            Number of workers for parallel processing (default is None).
-        termination : any, optional
-            Termination criteria for optimization (default is None).
-        save_population : bool, optional
-            Whether to save the population during optimization (default is False).
-        **kwargs : additional parameters
-            Additional parameters for fitting.
 
         Returns
         -------
@@ -305,7 +304,7 @@ class MhaMlpRegressor(BaseMhaMlp, RegressorMixin):
         self.build_model()  # Build the model architecture
 
         ## Fit the data
-        self._fit((X_tensor, y), lb, ub, mode, n_workers, termination, save_population, **kwargs)
+        self._fit(X_tensor, y)
 
         return self  # Return the fitted model
 
