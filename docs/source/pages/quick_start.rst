@@ -7,7 +7,7 @@ Library name: `MetaPerceptron`, but distributed as: `metaperceptron`. Therefore,
 
 * Install the `current PyPI release <https://pypi.python.org/pypi/metaperceptron />`_::
 
-   $ pip install metaperceptron==2.1.0
+   $ pip install metaperceptron==2.2.0
 
 
 * Install directly from source code::
