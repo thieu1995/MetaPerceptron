@@ -12,7 +12,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/metaperceptron.svg)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/metaperceptron.svg)
 [![Downloads](https://pepy.tech/badge/metaperceptron)](https://pepy.tech/project/metaperceptron)
-[![Tests & Publishes to PyPI](https://github.com/thieu1995/metaperceptron/actions/workflows/publish-package.yaml/badge.svg)](https://github.com/thieu1995/metaperceptron/actions/workflows/publish-package.yaml)
+[![Tests & Publishes to PyPI](https://github.com/thieu1995/metaperceptron/actions/workflows/publish-package.yml/badge.svg)](https://github.com/thieu1995/metaperceptron/actions/workflows/publish-package.yml)
 [![Documentation Status](https://readthedocs.org/projects/metaperceptron/badge/?version=latest)](https://metaperceptron.readthedocs.io/en/latest/?badge=latest)
 [![Chat](https://img.shields.io/badge/Chat-on%20Telegram-blue)](https://t.me/+fRVCJGuGJg1mNDg1)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10251021.svg)](https://zenodo.org/doi/10.5281/zenodo.10251021)

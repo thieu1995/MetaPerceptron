@@ -24,8 +24,8 @@ Welcome to MetaPerceptron's documentation!
 .. image:: https://img.shields.io/pypi/dm/metaperceptron.svg
    :target: https://img.shields.io/pypi/dm/metaperceptron.svg
 
-.. image:: https://github.com/thieu1995/metaperceptron/actions/workflows/publish-package.yaml/badge.svg
-   :target: https://github.com/thieu1995/metaperceptron/actions/workflows/publish-package.yaml
+.. image:: https://github.com/thieu1995/metaperceptron/actions/workflows/publish-package.yml/badge.svg
+   :target: https://github.com/thieu1995/metaperceptron/actions/workflows/publish-package.yml
 
 .. image:: https://pepy.tech/badge/metaperceptron
    :target: https://pepy.tech/project/metaperceptron
