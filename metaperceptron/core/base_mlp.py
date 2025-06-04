@@ -963,7 +963,7 @@ class BaseMhaMlp(BaseMlp):
                 lb = np.array(lb, dtype=float).ravel()
 
         if ub is None:
-            ub = (-1.,) * n_dims
+            ub = (1.,) * n_dims
         elif isinstance(ub, numbers.Number):
             ub = (ub, ) * n_dims
         elif isinstance(ub, (list, tuple, np.ndarray)):
