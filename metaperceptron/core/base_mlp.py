@@ -14,7 +14,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 from sklearn.base import BaseEstimator
-from mealpy import get_optimizer_by_name, Optimizer, get_all_optimizers, FloatVar
+from mealpy import get_optimizer_by_class, Optimizer, get_all_optimizers, FloatVar
 from permetrics import ClassificationMetric, RegressionMetric
 from metaperceptron.helpers.metric_util import get_all_regression_metrics, get_all_classification_metrics
 from metaperceptron.helpers import validator
@@ -803,7 +803,7 @@ class BaseMhaMlp(BaseMlp):
         Fits the model to the provided data using the optimizer.
     """
 
-    SUPPORTED_OPTIMIZERS = list(get_all_optimizers().keys())
+    SUPPORTED_OPTIMIZERS = list(get_all_optimizers(verbose=False).keys())
     SUPPORTED_CLS_OBJECTIVES = get_all_classification_metrics()
     SUPPORTED_REG_OBJECTIVES = get_all_regression_metrics()
 
@@ -861,7 +861,7 @@ class BaseMhaMlp(BaseMlp):
             If the provided optimizer is neither a string nor an instance of Optimizer.
         """
         if isinstance(optim, str):
-            opt_class = get_optimizer_by_name(optim)
+            opt_class = get_optimizer_by_class(optim)
             if isinstance(optim_params, dict):
                 return opt_class(**optim_params)
             else:
