@@ -32,7 +32,8 @@ class MhaMlpComparator:
     """
 
     def __init__(self, optim_dict=None, task="classification", hidden_layers=(10, ), act_names="ELU",
-                 dropout_rates=None, act_output=None, obj_name=None, verbose=False, seed=None, **kwargs):
+                 dropout_rates=None, act_output=None, obj_name=None, verbose=False, seed=None,
+                 lb=None, ub=None, mode='single', n_workers=None, termination=None):
         self.optim_dict = self._set_optimizer_dict(optim_dict)
         self.hidden_layers = hidden_layers
         self.act_names = act_names
@@ -40,17 +41,23 @@ class MhaMlpComparator:
         self.act_output = act_output
         self.obj_name = obj_name
         self.verbose = verbose
+        self.lb = lb
+        self.ub = ub
+        self.mode = mode
+        self.n_workers = n_workers
+        self.termination = termination
         self.generator = np.random.default_rng(seed)
         self.task = task
         if self.task == "classification":
             self.models = [MhaMlpClassifier(hidden_layers=hidden_layers, act_names=act_names,
                                             dropout_rates=dropout_rates, act_output=act_output, obj_name=obj_name,
-                                            verbose=verbose, seed=seed) for _ in range(len(self.optim_dict))]
+                                            verbose=verbose, seed=seed, lb=lb, ub=ub, mode=mode, n_workers=n_workers,
+                                            termination=termination) for _ in range(len(self.optim_dict))]
         else:
             self.models = [MhaMlpRegressor(hidden_layers=hidden_layers, act_names=act_names,
-                                            dropout_rates=dropout_rates, act_output=act_output, obj_name=obj_name,
-                                            verbose=verbose, seed=seed) for _ in range(len(self.optim_dict))]
-        self.kwargs = kwargs
+                                           dropout_rates=dropout_rates, act_output=act_output, obj_name=obj_name,
+                                           verbose=verbose, seed=seed, lb=lb, ub=ub, mode=mode, n_workers=n_workers,
+                                           termination=termination) for _ in range(len(self.optim_dict))]
         self.best_estimator_ = None
         self.best_params_ = None
         self.result_cross_val_scores_ = None
