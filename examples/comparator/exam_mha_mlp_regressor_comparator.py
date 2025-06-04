@@ -30,8 +30,8 @@ y_test = y_scaler.transform(y_test.reshape(-1, 1))
 
 # Here is the list of optimizers you want to compare
 optim_dict = {
-    'BaseGA':       {"epoch": 10, "pop_size": 20},
-    "OriginalPSO":  {"epoch": 10, "pop_size": 20},
+    'BaseGA':       {"epoch": 100, "pop_size": 20},
+    "OriginalPSO":  {"epoch": 100, "pop_size": 20},
 }
 
 # Initialize the comparator
@@ -42,18 +42,19 @@ compartor = MhaMlpComparator(
     act_names="ELU",
     dropout_rates=None,
     act_output=None,
-    obj_name="R2",
+    obj_name="NSE",
     verbose=True,
     seed=42,
+    lb=None, ub=None, mode='single', n_workers=None, termination=None
 )
 
-### Perform comparison
-# results = compartor.compare_cross_val_score(X_train, y_train, metric="RMSE", cv=4, n_trials=2, to_csv=True)
-# print(results)
+## Perform comparison
+results = compartor.compare_cross_val_score(X_train, y_train, metric="RMSE", cv=4, n_trials=2, to_csv=True)
+print(results)
 
-# results = compartor.compare_cross_validate(X_train, y_train, metrics=["MSE", "MAPE", "R2", "KGE", "NSE"],
-#                                            cv=4, return_train_score=True, n_trials=2, to_csv=True)
-# print(results)
+results = compartor.compare_cross_validate(X_train, y_train, metrics=["MSE", "MAPE", "R2", "KGE", "NSE"],
+                                           cv=4, return_train_score=True, n_trials=2, to_csv=True)
+print(results)
 
 results = compartor.compare_train_test(X_train, y_train, X_test, y_test,
                                        metrics=["MSE", "MAPE", "R2", "KGE", "NSE"], n_trials=2, to_csv=True)

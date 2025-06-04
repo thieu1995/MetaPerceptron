@@ -39,15 +39,16 @@ compartor = MhaMlpComparator(
     obj_name="F1S",
     verbose=True,
     seed=42,
+    lb=None, ub=None, mode='single', n_workers=None, termination=None
 )
 
-### Perform comparison
-# results = compartor.compare_cross_val_score(X_train, y_train, metric="AS", cv=4, n_trials=2, to_csv=True)
-# print(results)
+## Perform comparison
+results = compartor.compare_cross_val_score(X_train, y_train, metric="AS", cv=4, n_trials=2, to_csv=True)
+print(results)
 
-# results = compartor.compare_cross_validate(X_train, y_train, metrics=["AS", "PS", "F1S", "NPV"],
-#                                            cv=4, return_train_score=True, n_trials=2, to_csv=True)
-# print(results)
+results = compartor.compare_cross_validate(X_train, y_train, metrics=["AS", "PS", "F1S", "NPV"],
+                                           cv=4, return_train_score=True, n_trials=2, to_csv=True)
+print(results)
 
 results = compartor.compare_train_test(X_train, y_train, X_test, y_test,
                                        metrics=["AS", "PS", "F1S", "NPV"], n_trials=2, to_csv=True)
