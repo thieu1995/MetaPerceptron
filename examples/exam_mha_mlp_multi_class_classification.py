@@ -27,9 +27,10 @@ data.y_test = scaler_y.transform(data.y_test)
 model = MhaMlpClassifier(hidden_layers=(50,), act_names="Tanh",
                          dropout_rates=None, act_output=None,
                          optim="BaseGA", optim_params={"name": "WOA", "epoch": 100, "pop_size": 20},
-                         obj_name="F1S", seed=42, verbose=True)
+                         obj_name="F1S", seed=42, verbose=True,
+                         lb=-2., ub=2., mode='single', n_workers=None, termination=None)
 ## Train the model
-model.fit(X=data.X_train, y=data.y_train, lb=-1., ub=1.0)
+model.fit(X=data.X_train, y=data.y_train)
 
 ## Test the model
 y_pred = model.predict(data.X_test)

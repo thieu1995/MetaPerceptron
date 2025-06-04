@@ -27,7 +27,8 @@ data.y_test = scaler_y.transform(np.reshape(data.y_test, (-1, 1)))
 ## Create model
 model = MhaMlpRegressor(hidden_layers=(30, 15,), act_names="ELU", dropout_rates=0.2, act_output=None,
                         optim="BaseGA", optim_params={"name": "WOA", "epoch": 10, "pop_size": 30},
-                        obj_name="MSE", seed=42, verbose=True)
+                        obj_name="MSE", seed=42, verbose=True,
+                        lb=None, ub=None, mode='single', n_workers=None, termination=None)
 ## Train the model
 model.fit(data.X_train, data.y_train)
 
